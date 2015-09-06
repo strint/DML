@@ -10,6 +10,7 @@
 #include <string.h>
 #include <deque>
 #include <pthread.h>
+#include<unistd.h>
 
 struct sparse_feature{
     int idx;
