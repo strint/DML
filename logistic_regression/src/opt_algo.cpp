@@ -2,7 +2,7 @@
 #include "mpi.h"
 #include <iostream>
 #include <vector>
-
+#include <pthread.h>
 extern "C"{
 #include <cblas.h>
 }
@@ -86,7 +86,7 @@ void OPT_ALGO::init_theta(){
     global_old_loss_val = 0.0;
     global_new_loss_val = 0.0;
     
-    main_thread_id = getpid();   
+    main_thread_id = pthread_self();   
     pthread_barrier_init(&barrier, NULL, 3);
  
     float init_w = 0.0;
@@ -182,7 +182,7 @@ void OPT_ALGO::line_search(float *param_g){
         pthread_mutex_unlock(&mutex); 
 
         pid_t local_thread_id;
-        local_thread_id = getpid();
+        local_thread_id = pthread_self();
         if(local_thread_id == main_thread_id){
             MPI_Allreduce(&global_old_loss_val, &all_nodes_old_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
         }
@@ -259,7 +259,7 @@ void OPT_ALGO::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, 
     pthread_mutex_unlock(&mutex);
 
     pid_t local_thread_id;
-    local_thread_id = getpid();
+    local_thread_id = pthread_self();
     if(local_thread_id == main_thread_id){
         for(int j = 0; j < fea_dim; j++){ 
             *(all_nodes_global_g + j) = 0.0;
