@@ -2,14 +2,17 @@
 LIB = -L/opt/OpenBLAS/lib
 INCLUDE = -I/opt/OpenBLAS/include 
 #train code
-train:main.o opt_algo.o 
-	mpicxx -o train main.o opt_algo.o $(LIB)  -lopenblas -lpthread
+train:main.o opt_algo.o load_data.o 
+	mpicxx -o train main.o opt_algo.o load_data.o $(LIB)  -lopenblas -lpthread
 
 main.o: src/main.cpp 
 	mpicxx $(INCLUDE) -I ./include -c src/main.cpp
 
 opt_algo.o: src/opt_algo.cpp  
 	mpicxx $(INCLUDE) -I ./include -c src/opt_algo.cpp
+
+load_data.o: src/load_data.cpp
+	mpicxx $(INCLUDE) -I ./include -c src/load_data.cpp
 
 #predict code
 predict: predict.o

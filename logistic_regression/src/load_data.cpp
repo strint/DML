@@ -1,6 +1,6 @@
 #include "loan_data.h"
 
-std::vector<std::string> OPT_ALGO::split_line(std::string split_tag, std::vector<std::string>& feature_index){
+std::vector<std::string> Load_Data::split_line(std::string split_tag, std::vector<std::string>& feature_index){
     int start = 0, end = 0;
     while((end = line.find_first_of(split_tag, start)) != std::string::npos){
         if(end > start){
@@ -15,7 +15,7 @@ std::vector<std::string> OPT_ALGO::split_line(std::string split_tag, std::vector
     }
 }
 
-void OPT_ALGO::get_feature_struct(){
+void Load_Data::get_feature_struct(){
     for(int i = 1; i < feature_index.size(); i++){//start from index 1
         int start = 0, end = 0;
         while((end = feature_index[i].find_first_of(":", start)) != std::string::npos){
@@ -37,7 +37,7 @@ void OPT_ALGO::get_feature_struct(){
     }
 }
 
-void OPT_ALGO::load_data(std::string data_file, std::string split_tag){
+void Load_Data::load_data(char* data_file, std::string split_tag){
     std::ifstream fin(data_file.c_str(), std::ios::in);
     if(!fin) std::cerr<<"open error get feature number..."<<data_file<<std::endl;
     int y = 0;

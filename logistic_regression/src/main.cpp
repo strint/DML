@@ -1,4 +1,5 @@
 #include "opt_algo.h"
+#include "load_data.h"
 #include "mpi.h"
 #include <string.h>
 #include <stdlib.h>
@@ -29,10 +30,11 @@ int main(int argc,char* argv[]){
     char *test_data_file = argv[2];
     std::string split_tag = " ";
     
+    LoadData ld;
+    //get label and feature matrix
+    ld.load_data(train_data_file, split_tag);
     OPT_ALGO opt;
     opt.fea_dim = 0;
-    //get label and feature matrix
-    opt.load_data(train_data_file, split_tag);
     int root = 0;
     MPI_Bcast(&opt.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
     std::cout<<opt.fea_dim<<std::endl;

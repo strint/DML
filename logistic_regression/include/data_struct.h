@@ -4,4 +4,5 @@
 struct sparse_feature{
     int idx;
     float val;
-}
+};
+#endif

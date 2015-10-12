@@ -1,7 +1,9 @@
 #include "opt_algo.h"
+
 #include "mpi.h"
 #include <iostream>
 #include <vector>
+
 
 extern "C"{
 #include <cblas.h>
