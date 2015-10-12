@@ -10,11 +10,7 @@
 #include <string.h>
 #include <deque>
 #include <pthread.h>
-
-struct sparse_feature{
-    int idx;
-    float val;
-};
+#include "data_struct.h"
 
 class OPT_ALGO{
 public:
@@ -22,14 +18,11 @@ public:
     ~OPT_ALGO();
 
     //call by main thread
-    void load_data(std::string train_data_file, std::string split_tag);
     void init_theta();
 
     //call by threads 
     void owlqn(int proc_id, int n_procs);
     //shared by multithreads
-    std::vector<std::vector<sparse_feature> > fea_matrix;//feature matrix shared by all threads
-    std::vector<float> label;//label of instance shared by all threads
     float *w;//model paramter shared by all threads
     float *next_w;//model paramter after line search
     float *global_g;//gradient of loss function
@@ -46,7 +39,6 @@ public:
     pid_t main_thread_id;
 
 private:
-    std::vector<std::string> split_line(std::string split_tag, std::vector<std::string>& feature_index); 
     void get_feature_struct();
     void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);
     void loss_function_gradient(float *para_w, float *para_g);
