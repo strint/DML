@@ -18,14 +18,15 @@ void *opt_algo(void *arg){
 }
 
 int main(int argc,char* argv[]){  
+    std::cout<<"cmd: ./train -trainfile -testfile"<<std::endl;
     int myid, numprocs;
     MPI_Status status;
     MPI_Init(&argc,&argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&myid);
     MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
     //exec by main thread    
-    std::string train_data_file = "./data/train.txt";
-    std::string test_data_file = "./data/test.txt";
+    char *train_data_file = argv[1];
+    char *test_data_file = argv[2];
     std::string split_tag = " ";
     
     OPT_ALGO opt;
