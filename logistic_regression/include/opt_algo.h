@@ -10,7 +10,7 @@
 #include <string.h>
 #include <deque>
 #include <pthread.h>
-#include "data_struct.h"
+#include "load_data.h"
 
 class OPT_ALGO{
 public:
@@ -50,12 +50,5 @@ private:
 
     pthread_mutex_t mutex;
     pthread_barrier_t barrier;
-    std::string line;
-    std::vector<std::string> tmp_vec; 
-    std::vector<std::string> feature_index;
-    std::string index_str;
-    sparse_feature sf;
-    std::vector<sparse_feature> key_val;
-    int index, value;
 };
 #endif
