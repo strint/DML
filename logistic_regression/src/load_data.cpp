@@ -1,3 +1,4 @@
+#include <iostream>
 #include "load_data.h"
 #include "stdlib.h"
 
@@ -39,7 +40,12 @@ void Load_Data::get_feature_struct(){
 }
 
 void Load_Data::load_data(char* data_file, std::string split_tag){
-    std::ifstream fin(data_file.c_str(), std::ios::in);
+    std::string file_name = "";
+    int i = 0;
+    while(*data_file){
+        file_name += *data_file;
+    }
+    std::ifstream fin(file_name.c_str(), std::ios::in);
     if(!fin) std::cerr<<"open error get feature number..."<<data_file<<std::endl;
     int y = 0;
     while(getline(fin,line)){

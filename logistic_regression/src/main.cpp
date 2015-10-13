@@ -30,14 +30,14 @@ int main(int argc,char* argv[]){
     char *test_data_file = argv[2];
     std::string split_tag = " ";
     
-    LoadData ld;
+    Load_Data ld;
     //get label and feature matrix
     ld.load_data(train_data_file, split_tag);
     OPT_ALGO opt;
-    opt.fea_dim = 0;
+    ld.fea_dim = 0;
     int root = 0;
-    MPI_Bcast(&opt.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
-    std::cout<<opt.fea_dim<<std::endl;
+    MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
+    std::cout<<ld.fea_dim<<std::endl;
     //std::cout<<"-----"<<std::endl;
     opt.init_theta();
     //pid_t mid;
