@@ -3,6 +3,9 @@
 #include "load_data.h"
 #include "stdlib.h"
 
+Load_Data::Load_Data(){}
+Load_Data::~Load_Data(){}
+
 std::vector<std::string> Load_Data::split_line(std::string split_tag, std::vector<std::string>& feature_index){
     int start = 0, end = 0;
     while((end = line.find_first_of(split_tag, start)) != std::string::npos){
