@@ -10,7 +10,6 @@
 #include <string.h>
 #include <deque>
 #include <pthread.h>
-#include "load_data.h"
 
 class OPT_ALGO{
 public:
@@ -28,7 +27,6 @@ public:
     float *global_g;//gradient of loss function
     float *all_nodes_global_g;
     float *global_next_g;//gradient of loss function when arrive new w
-    long int fea_dim;//feature dimension
     float c;
     int m;
     int n_threads;//thread number

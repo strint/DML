@@ -8,11 +8,11 @@ train:main.o opt_algo.o load_data.o
 main.o: src/main.cpp 
 	mpicxx $(INCLUDE) -I ./include -c src/main.cpp
 
-opt_algo.o: src/opt_algo.cpp  
-	mpicxx $(INCLUDE) -I ./include -c src/opt_algo.cpp
-
 load_data.o: src/load_data.cpp
 	mpicxx $(INCLUDE) -I ./include -c src/load_data.cpp
+
+opt_algo.o: src/opt_algo.cpp  
+	mpicxx $(INCLUDE) -I ./include -c src/opt_algo.cpp
 
 #predict code
 predict: predict.o

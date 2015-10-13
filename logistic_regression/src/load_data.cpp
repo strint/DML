@@ -1,4 +1,5 @@
-#include "loan_data.h"
+#include "load_data.h"
+#include "stdlib.h"
 
 std::vector<std::string> Load_Data::split_line(std::string split_tag, std::vector<std::string>& feature_index){
     int start = 0, end = 0;
@@ -21,7 +22,7 @@ void Load_Data::get_feature_struct(){
         while((end = feature_index[i].find_first_of(":", start)) != std::string::npos){
             if(end > start){
                 index_str = feature_index[i].substr(start, end - start);
-                index = atoi(index_str.c_str());
+                float index = atoi(index_str.c_str());
                 if(index > fea_dim) fea_dim = index + 1;
                 sf.idx = index - 1;
             }
@@ -30,7 +31,7 @@ void Load_Data::get_feature_struct(){
         }
         if(start < feature_index[i].size()){
             index_str = feature_index[i].substr(start);
-            value = atoi(index_str.c_str());
+            float value = atoi(index_str.c_str());
             sf.val = value;
         }
         key_val.push_back(sf);

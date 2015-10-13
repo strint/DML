@@ -1,12 +1,14 @@
-
 #include "mpi.h"
 #include <iostream>
 #include <vector>
 #include "opt_algo.h"
+#include "load_data.h"
 
 extern "C"{
 #include <cblas.h>
 }
+
+Load_Data load_data;
 
 OPT_ALGO::OPT_ALGO(){
 }
@@ -54,14 +56,14 @@ float OPT_ALGO::sigmoid(float x)
 
 float OPT_ALGO::loss_function_value(float *para_w){
     float f = 0.0;
-    for(int i = 0; i < fea_matrix.size(); i++){
+    for(int i = 0; i < load_data.fea_matrix.size(); i++){
         float x = 0.0;
-        for(int j = 0; j < fea_matrix[i].size(); j++){
-            int id = fea_matrix[i][j].idx;
-            float val = fea_matrix[i][j].val;
+        for(int j = 0; j < load_data.fea_matrix[i].size(); j++){
+            int id = load_data.fea_matrix[i][j].idx;
+            float val = load_data.fea_matrix[i][j].val;
             x += *(para_w + id) * val;//maybe add bias later
         }
-        float l = label[i] * log(1/sigmoid(-1 * x)) + (1 - label[i]) * log(1/sigmoid(x));
+        float l = load_data.label[i] * log(1/sigmoid(-1 * x)) + (1 - load_data.label[i]) * log(1/sigmoid(x));
         f += l;
     }
     return f;
@@ -69,20 +71,20 @@ float OPT_ALGO::loss_function_value(float *para_w){
 
 void OPT_ALGO::loss_function_gradient(float *para_w, float *para_g){
     float f = 0.0;
-    for(int i = 0; i < fea_matrix.size(); i++){
+    for(int i = 0; i < load_data.fea_matrix.size(); i++){
         float x = 0.0, value = 0.0;
         int index;
-        for(int j = 0; j < fea_matrix[i].size(); j++){
-            index = fea_matrix[i][j].idx;
-            value = fea_matrix[i][j].val;
+        for(int j = 0; j <load_data.fea_matrix[i].size(); j++){
+            index = load_data.fea_matrix[i][j].idx;
+            value = load_data.fea_matrix[i][j].val;
             x += *(para_w + index) * value;
         }
-        for(int j = 0; j < fea_matrix[i].size(); j++){
-            *(para_g + j) += label[i] * sigmoid(x) * value + (1 - label[i]) * sigmoid(x) * value;
+        for(int j = 0; j < load_data.fea_matrix[i].size(); j++){
+            *(para_g + j) += load_data.label[i] * sigmoid(x) * value + (1 - load_data.label[i]) * sigmoid(x) * value;
         }
     }
     for(int j = 0; j < fea_dim; j++){
-        *(para_g + j) /= fea_matrix.size();
+        *(para_g + j) /= load_data.fea_matrix.size();
     }
 }
 
