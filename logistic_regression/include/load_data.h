@@ -9,7 +9,7 @@ class Load_Data{
 public:
     Load_Data();
     ~Load_Data();
-    void load_data(char *train_file, std::string split_tag);
+    void load_data(const char *train_file, std::string split_tag);
     void get_feature_struct();
     std::vector<std::string> split_line(std::string split_tag, std::vector<std::string>& feature_index);
 
