@@ -1,4 +1,4 @@
-#include "opt_algo.h"
+#include "lr.h"
 #include "load_data.h"
 #include "mpi.h"
 #include <string.h>
@@ -8,7 +8,7 @@
 #include "gtest/gtest.h"
 
 struct ThreadParam{
-    OPT_ALGO *opt;
+    LR *opt;
     int process_id;
     int n_process;
 };
@@ -33,7 +33,7 @@ int main(int argc,char* argv[]){
     Load_Data ld;
     //get label and feature matrix
     ld.load_data(train_data_file, split_tag);
-    OPT_ALGO opt;
+    LR opt;
     ld.fea_dim = 0;
     int root = 0;
     MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);

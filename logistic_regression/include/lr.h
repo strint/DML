@@ -1,5 +1,5 @@
-#ifndef OPT_ALGO_H_
-#define OPT_ALGO_H_
+#ifndef LR_H_
+#define LR_H_
 
 #include <string>
 #include <fstream>
@@ -11,10 +11,10 @@
 #include <deque>
 #include <pthread.h>
 
-class OPT_ALGO{
+class LR{
 public:
-    OPT_ALGO();
-    ~OPT_ALGO();
+    LR();
+    ~LR();
 
     //call by main thread
     void init_theta();

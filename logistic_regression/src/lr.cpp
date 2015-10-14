@@ -1,7 +1,7 @@
 #include "mpi.h"
 #include <iostream>
 #include <vector>
-#include "opt_algo.h"
+#include "lr.h"
 #include "load_data.h"
 
 extern "C"{
@@ -10,10 +10,10 @@ extern "C"{
 
 Load_Data load_data;
 
-OPT_ALGO::OPT_ALGO(){
+LR::LR(){
 }
 
-OPT_ALGO::~OPT_ALGO(){
+LR::~LR(){
     delete [] w; 
     delete [] next_w;
     delete [] global_g;
@@ -21,7 +21,7 @@ OPT_ALGO::~OPT_ALGO(){
 }
 
 
-void OPT_ALGO::init_theta(){
+void LR::init_theta(){
     c = 1.0;
     m = 10;
     n_threads = 3;
@@ -48,13 +48,13 @@ void OPT_ALGO::init_theta(){
 }
 
 //----------------------------owlqn--------------------------------------------
-float OPT_ALGO::sigmoid(float x)
+float LR::sigmoid(float x)
 {
     float sgm = 1/(1+exp(-(float)x));
     return (float)sgm;
 }
 
-float OPT_ALGO::loss_function_value(float *para_w){
+float LR::loss_function_value(float *para_w){
     float f = 0.0;
     for(int i = 0; i < load_data.fea_matrix.size(); i++){
         float x = 0.0;
@@ -69,7 +69,7 @@ float OPT_ALGO::loss_function_value(float *para_w){
     return f;
 }
 
-void OPT_ALGO::loss_function_gradient(float *para_w, float *para_g){
+void LR::loss_function_gradient(float *para_w, float *para_g){
     float f = 0.0;
     for(int i = 0; i < load_data.fea_matrix.size(); i++){
         float x = 0.0, value = 0.0;
@@ -88,7 +88,7 @@ void OPT_ALGO::loss_function_gradient(float *para_w, float *para_g){
     }
 }
 
-void OPT_ALGO::loss_function_subgradient(float * local_g, float *local_sub_g){
+void LR::loss_function_subgradient(float * local_g, float *local_sub_g){
     if(c == 0.0){
         for(int j = 0; j < load_data.fea_dim; j++){
             *(local_sub_g + j) = -1 * *(local_g + j);
@@ -111,14 +111,14 @@ void OPT_ALGO::loss_function_subgradient(float * local_g, float *local_sub_g){
     }
 }
 
-void OPT_ALGO::fix_dir(float *w, float *next_w){
+void LR::fix_dir(float *w, float *next_w){
     for(int j = 0; j < load_data.fea_dim; j++){
         if(*(next_w + j) * *(w + j) >=0) *(next_w + j) = 0.0;
         else *(next_w + j) = *(next_w + j);
     }
 }
 
-void OPT_ALGO::line_search(float *param_g){
+void LR::line_search(float *param_g){
     float alpha = 1.0;
     float beta = 1e-4;
     float backoff = 0.5;
@@ -162,7 +162,7 @@ void OPT_ALGO::line_search(float *param_g){
     }
 }
 
-void OPT_ALGO::two_loop(int use_list_len, float *local_sub_g, float **s_list, float **y_list, float *ro_list, float *p){
+void LR::two_loop(int use_list_len, float *local_sub_g, float **s_list, float **y_list, float *ro_list, float *p){
     float *q = new float[load_data.fea_dim];//local variable
     float *alpha = new float[m]; 
     cblas_dcopy(load_data.fea_dim, (double*)local_sub_g, 1, (double*)q, 1);
@@ -191,7 +191,7 @@ void OPT_ALGO::two_loop(int use_list_len, float *local_sub_g, float **s_list, fl
     delete [] last_y;
 }
 
-void OPT_ALGO::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list){
+void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list){
     //define and initial local parameters
     float *local_g = new float[load_data.fea_dim];//single thread gradient
     float *local_sub_g = new float[load_data.fea_dim];//single thread subgradient
@@ -241,7 +241,7 @@ void OPT_ALGO::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, 
     pthread_barrier_wait(&barrier);
 }
 
-void OPT_ALGO::owlqn(int proc_id, int n_procs){
+void LR::owlqn(int proc_id, int n_procs){
     float *ro_list = new float[load_data.fea_dim];
 
     float **s_list = new float*[m];
