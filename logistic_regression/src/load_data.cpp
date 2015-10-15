@@ -19,6 +19,9 @@ std::vector<std::string> Load_Data::split_line(std::string split_tag, std::vecto
         index_str = line.substr(start);
         feature_index.push_back(index_str);
     }
+    for(int i = 0; i < feature_index.size(); i++){
+        std::cout<<feature_index[i]<<std::endl;
+    }
 }
 
 void Load_Data::get_feature_struct(){
@@ -48,6 +51,7 @@ void Load_Data::load_data(const char* data_file, std::string split_tag){
     if(!fin) std::cerr<<"open error get feature number..."<<data_file<<std::endl;
     int y = 0;
     while(getline(fin,line)){
+        std::cout<<line<<std::endl;
         feature_index.clear();
         key_val.clear();
         //return id:value, .e.g 3:1, 4:1

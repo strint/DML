@@ -31,18 +31,14 @@ int main(int argc,char* argv[]){
     std::string split_tag = " ";
     
     Load_Data ld;
-    //get label and feature matrix
     ld.load_data(train_data_file, split_tag);
-    LR opt;
     ld.fea_dim = 0;
     int root = 0;
     MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
     std::cout<<ld.fea_dim<<std::endl;
-    //std::cout<<"-----"<<std::endl;
+    /*
+    LR opt;
     opt.init_theta();
-    //pid_t mid;
-    //mid = getpid();
-    //std::cout<<mid<<std::endl;
     std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
     for(int i = 0; i < opt.n_threads; i++){//construct parameter
@@ -58,11 +54,10 @@ int main(int argc,char* argv[]){
         else threads.push_back(thread_id);
             
     }
-
     for(int i = 0; i < threads.size(); i++){//join threads function
         pthread_join(threads[i], 0); 
     }
-
+    */
     MPI::Finalize();
     return 0;
 }
