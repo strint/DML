@@ -19,13 +19,13 @@ std::vector<std::string> Load_Data::split_line(std::string split_tag, std::vecto
         index_str = line.substr(start);
         feature_index.push_back(index_str);
     }
-    for(int i = 0; i < feature_index.size(); i++){
-        std::cout<<feature_index[i]<<std::endl;
-    }
+    std::cout<<feature_index.size()<<std::endl;
 }
 
 void Load_Data::get_feature_struct(){
+    std::cout<<feature_index.size()<<std::endl;
     for(int i = 1; i < feature_index.size(); i++){//start from index 1
+        std::cout<<feature_index[i]<<std::endl; 
         int start = 0, end = 0;
         while((end = feature_index[i].find_first_of(":", start)) != std::string::npos){
             if(end > start){
@@ -55,12 +55,13 @@ void Load_Data::load_data(const char* data_file, std::string split_tag){
         feature_index.clear();
         key_val.clear();
         //return id:value, .e.g 3:1, 4:1
+        std::cout<<feature_index.size()<<std::endl;
         split_line(split_tag, feature_index);
-        y = atof(feature_index[0].c_str());
-        label.push_back(y);
-        //3:1 as input
-        get_feature_struct();
-        fea_matrix.push_back(key_val);
+        std::cout<<feature_index.size()<<std::endl;
+        //y = atof(feature_index[0].c_str());
+        //label.push_back(y);
+        //get_feature_struct();
+        //fea_matrix.push_back(key_val);
     }
     fin.close();
 }
