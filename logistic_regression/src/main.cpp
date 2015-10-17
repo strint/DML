@@ -31,8 +31,8 @@ int main(int argc,char* argv[]){
     std::string split_tag = " ";
     
     Load_Data ld;
-    ld.load_data(train_data_file, split_tag);
     ld.fea_dim = 0;
+    ld.load_data(train_data_file, split_tag);
     int root = 0;
     MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
     std::cout<<ld.fea_dim<<std::endl;

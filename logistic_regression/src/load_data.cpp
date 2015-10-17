@@ -10,7 +10,6 @@ Load_Data::~Load_Data(){}
 void Load_Data::split_line(const std::string& line, const std::string& split_tag, std::vector<std::string>& feature_index) {
     size_t start = 0, end = 0;
     feature_index.clear();
-    std::string index_str;
     while((end = line.find_first_of(split_tag, start)) != std::string::npos) {
         if(end > start){
             feature_index.push_back(line.substr(start, end - start));
@@ -24,10 +23,9 @@ void Load_Data::split_line(const std::string& line, const std::string& split_tag
 
 void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std::vector<sparse_feature>& key_val){
     key_val.clear();
+    std::string index_str;
     for(int i = 1; i < feature_index.size(); i++){//start from index 1
-        std::cout<<feature_index[i]<<std::endl; 
         int start = 0, end = 0;
-        std::string index_str;
         while((end = feature_index[i].find_first_of(":", start)) != std::string::npos){
             if(end > start){
                 index_str = feature_index[i].substr(start, end - start);
@@ -56,7 +54,6 @@ void Load_Data::load_data(const char* data_file, std::string split_tag){
     std::vector<sparse_feature> key_val;
     while(getline(fin, line)){
         split_line(line, split_tag, feature_index);
-        std::cout<<feature_index.size()<<std::endl;
         y = atof(feature_index[0].c_str());
         label.push_back(y);
         get_feature_struct(feature_index, key_val);
