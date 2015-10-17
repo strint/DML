@@ -1,32 +1,33 @@
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "load_data.h"
 #include "stdlib.h"
 
 Load_Data::Load_Data(){}
 Load_Data::~Load_Data(){}
 
-std::vector<std::string> Load_Data::split_line(std::string split_tag, std::vector<std::string>& feature_index){
-    int start = 0, end = 0;
-    while((end = line.find_first_of(split_tag, start)) != std::string::npos){
+void Load_Data::split_line(const std::string& line, const std::string& split_tag, std::vector<std::string>& feature_index) {
+    size_t start = 0, end = 0;
+    feature_index.clear();
+    std::string index_str;
+    while((end = line.find_first_of(split_tag, start)) != std::string::npos) {
         if(end > start){
-            index_str = line.substr(start, end - start);
-            feature_index.push_back(index_str);
+            feature_index.push_back(line.substr(start, end - start));
         }
         start = end + 1;
     }
     if(start < line.size()){
-        index_str = line.substr(start);
-        feature_index.push_back(index_str);
+        feature_index.push_back(line.substr(start));
     }
-    std::cout<<feature_index.size()<<std::endl;
 }
 
-void Load_Data::get_feature_struct(){
-    std::cout<<feature_index.size()<<std::endl;
+void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std::vector<sparse_feature>& key_val){
+    key_val.clear();
     for(int i = 1; i < feature_index.size(); i++){//start from index 1
         std::cout<<feature_index[i]<<std::endl; 
         int start = 0, end = 0;
+        std::string index_str;
         while((end = feature_index[i].find_first_of(":", start)) != std::string::npos){
             if(end > start){
                 index_str = feature_index[i].substr(start, end - start);
@@ -50,18 +51,16 @@ void Load_Data::load_data(const char* data_file, std::string split_tag){
     std::ifstream fin(data_file, std::ios::in);
     if(!fin) std::cerr<<"open error get feature number..."<<data_file<<std::endl;
     int y = 0;
-    while(getline(fin,line)){
-        std::cout<<line<<std::endl;
-        feature_index.clear();
-        key_val.clear();
-        //return id:value, .e.g 3:1, 4:1
+    std::string line;
+    std::vector<std::string> feature_index;
+    std::vector<sparse_feature> key_val;
+    while(getline(fin, line)){
+        split_line(line, split_tag, feature_index);
         std::cout<<feature_index.size()<<std::endl;
-        split_line(split_tag, feature_index);
-        std::cout<<feature_index.size()<<std::endl;
-        //y = atof(feature_index[0].c_str());
-        //label.push_back(y);
-        //get_feature_struct();
-        //fea_matrix.push_back(key_val);
+        y = atof(feature_index[0].c_str());
+        label.push_back(y);
+        get_feature_struct(feature_index, key_val);
+        fea_matrix.push_back(key_val);
     }
     fin.close();
 }
