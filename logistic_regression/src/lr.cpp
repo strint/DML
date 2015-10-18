@@ -18,6 +18,7 @@ LR::~LR(){
     delete [] next_w;
     delete [] global_g;
     delete [] global_next_g;
+    delete [] all_nodes_global_g;
 }
 
 

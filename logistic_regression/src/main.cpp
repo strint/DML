@@ -36,10 +36,9 @@ int main(int argc,char* argv[]){
     int root = 0;
     MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
     std::cout<<ld.fea_dim<<std::endl;
-    /*
-    LR opt;
-    opt.init_theta();
-    std::vector<ThreadParam> params;
+    LR lr;
+    lr.init_theta();
+    /*std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
     for(int i = 0; i < opt.n_threads; i++){//construct parameter
         ThreadParam param = {&opt, myid, numprocs};
