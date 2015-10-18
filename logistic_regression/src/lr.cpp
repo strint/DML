@@ -21,7 +21,6 @@ LR::~LR(){
     delete [] all_nodes_global_g;
 }
 
-
 void LR::init_theta(){
     c = 1.0;
     m = 10;

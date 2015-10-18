@@ -38,10 +38,10 @@ int main(int argc,char* argv[]){
     std::cout<<ld.fea_dim<<std::endl;
     LR lr;
     lr.init_theta();
-    /*std::vector<ThreadParam> params;
+    std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
-    for(int i = 0; i < opt.n_threads; i++){//construct parameter
-        ThreadParam param = {&opt, myid, numprocs};
+    for(int i = 0; i < lr.n_threads; i++){//construct parameter
+        ThreadParam param = {&lr, myid, numprocs};
         params.push_back(param);
     } 
     //multithread start
@@ -56,7 +56,7 @@ int main(int argc,char* argv[]){
     for(int i = 0; i < threads.size(); i++){//join threads function
         pthread_join(threads[i], 0); 
     }
-    */
+   
     MPI::Finalize();
     return 0;
 }
