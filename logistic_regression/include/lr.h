@@ -15,26 +15,23 @@ class LR{
 public:
     LR();
     ~LR();
-
     //call by main thread
     void init_theta();
-
     //call by threads 
     void owlqn(int proc_id, int n_procs);
     //shared by multithreads
     float *w;//model paramter shared by all threads
     float *next_w;//model paramter after line search
     float *global_g;//gradient of loss function
-    float *all_nodes_global_g;
     float *global_next_g;//gradient of loss function when arrive new w
-    float c;
-    int m;
-    int n_threads;//thread number
+    float *all_nodes_global_g;
     float global_old_loss_val;//loss value of loss function
     float all_nodes_old_loss_val;
     float global_new_loss_val;//loss value of loss function when arrive new w
     float all_nodes_new_loss_val;
     pid_t main_thread_id;
+    float c;
+    int m;
 
 private:
     void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);

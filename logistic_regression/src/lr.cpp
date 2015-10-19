@@ -3,12 +3,14 @@
 #include <vector>
 #include "lr.h"
 #include "load_data.h"
+#include "config.h"
 
 extern "C"{
 #include <cblas.h>
 }
 
 Load_Data load_data;
+CONFIG config;
 
 LR::LR(){
 }
@@ -24,8 +26,6 @@ LR::~LR(){
 void LR::init_theta(){
     c = 1.0;
     m = 10;
-    n_threads = 3;
-
     w = new float[load_data.fea_dim];
     next_w = new float[load_data.fea_dim];
     global_g = new float[load_data.fea_dim];
@@ -214,7 +214,7 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
             *(all_nodes_global_g + j) = 0.0;
         }
         for(int j = 0; j < load_data.fea_dim; j++){//must be pay attention
-            *(global_g + j) /= n_threads;
+            *(global_g + j) /= config.n_threads;
         }   
         MPI_Allreduce(global_g, all_nodes_global_g, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//all_nodes_global_g store shared sum of every nodes search direction
     }
