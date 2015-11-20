@@ -2,11 +2,11 @@
 LIB = -L/opt/OpenBLAS/lib
 INCLUDE = -I/opt/OpenBLAS/include 
 #train code
-train:main.o lr.o load_data.o 
-	mpicxx -o train main.o lr.o load_data.o $(LIB)  -lopenblas -lpthread
+train:lr_main.o lr.o load_data.o 
+	mpicxx -o train lr_main.o lr.o load_data.o $(LIB)  -lopenblas -lpthread
 
-main.o: src/main.cpp 
-	mpicxx $(INCLUDE) -I ./include -c src/main.cpp
+lr_main.o: src/lr_main.cpp 
+	mpicxx $(INCLUDE) -I ./include -c src/lr_main.cpp
 
 load_data.o: src/load_data.cpp
 	mpicxx $(INCLUDE) -I ./include -c src/load_data.cpp
