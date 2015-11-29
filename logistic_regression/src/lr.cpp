@@ -36,7 +36,7 @@ void LR::init_theta(){
     global_new_loss_val = 0.0;
     
     main_thread_id = pthread_self();   
-    pthread_barrier_init(&barrier, NULL, 3);
+    pthread_barrier_init(&barrier, NULL, barrier_length);
  
     float init_w = 0.0;
     for(int j = 0; j < load_data.fea_dim; j++){
@@ -192,23 +192,31 @@ void LR::two_loop(int use_list_len, float *local_sub_g, float **s_list, float **
 }
 
 void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list){
+    std::cout << thread_rank << "owlqn e" << std::endl;
     //define and initial local parameters
     float *local_g = new float[load_data.fea_dim];//single thread gradient
     float *local_sub_g = new float[load_data.fea_dim];//single thread subgradient
     float *p = new float[load_data.fea_dim];//single thread search direction.after two loop
+    std::cout << thread_rank << "owlqn f" << std::endl;
     loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
+    std::cout << thread_rank << "owlqn g" << std::endl;
     loss_function_subgradient(local_g, local_sub_g); 
+    std::cout << thread_rank << "owlqn h" << std::endl;
     //should add code update multithread and all nodes sub_g to global_sub_g
     two_loop(use_list_len, local_sub_g, s_list, y_list, ro_list, p);
 
+    std::cout << thread_rank << "owlqn i" << std::endl;
     pthread_mutex_lock(&mutex);
+    std::cout << thread_rank << "owlqn j" << std::endl;
     for(int j = 0; j < load_data.fea_dim; j++){
         *(global_g + j) += *(p + j);//update global direction of all threads
     }
+    std::cout << thread_rank << "owlqn k" << std::endl;
     pthread_mutex_unlock(&mutex);
 
     pid_t local_thread_id;
     local_thread_id = pthread_self();
+    std::cout << thread_rank << "owlqn l" << std::endl;
     if(local_thread_id == main_thread_id){
         for(int j = 0; j < load_data.fea_dim; j++){ 
             *(all_nodes_global_g + j) = 0.0;
@@ -216,12 +224,16 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
         for(int j = 0; j < load_data.fea_dim; j++){//must be pay attention
             *(global_g + j) /= config.n_threads;
         }   
+        std::cout << thread_rank << "owlqn m" << std::endl;
         MPI_Allreduce(global_g, all_nodes_global_g, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//all_nodes_global_g store shared sum of every nodes search direction
     }
+    std::cout << thread_rank << "owlqn n" << std::endl;
     pthread_barrier_wait(&barrier);
     //should be synchronous all threads
+    std::cout << thread_rank << "owlqn o" << std::endl;
     line_search(all_nodes_global_g);//use global search direction to search
     //update slist
+    std::cout << thread_rank << "owlqn p" << std::endl;
     if(local_thread_id == main_thread_id){
         cblas_daxpy(load_data.fea_dim, -1, (double*)w, 1, (double*)next_w, 1);
         cblas_dcopy(load_data.fea_dim, (double*)next_w, 1, (double*)s_list[(m - use_list_len) % m], 1);
@@ -239,30 +251,37 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
         cblas_dcopy(load_data.fea_dim, (double*)next_w, 1, (double*)w, 1);
     }
     pthread_barrier_wait(&barrier);
+    std::cout << thread_rank << "owlqn q" << std::endl;
 }
 
 void LR::owlqn(int proc_id, int n_procs){
+    pthread_mutex_init(&mutex, NULL);
+    std::cout << thread_rank << "owlqn " << std::endl;
     float *ro_list = new float[load_data.fea_dim];
 
+    std::cout << thread_rank << "owlqn a" << std::endl;
     float **s_list = new float*[m];
     s_list[0] = new float[m * load_data.fea_dim];
     for(int i = 1; i < m; i++){
         s_list[i] = s_list[i-1] + load_data.fea_dim; 
     }
     
+    std::cout << thread_rank << "owlqn b" << std::endl;
     float **y_list = new float* [m];
     y_list[0] = new float[m * load_data.fea_dim];
     for(int i = 1; i < m; i++){
         y_list[i] = y_list[i-1] + load_data.fea_dim; 
     }
 
+    std::cout << thread_rank << "owlqn c" << std::endl;
     int use_list_len = 0;
     int step = 0;
     while(step < 3){
+        std::cout << thread_rank << "owlqn d" << std::endl;
         parallel_owlqn(use_list_len, ro_list, s_list, y_list);        
         step++;
     }
-    pthread_barrier_destroy(&barrier);
+    std::cout << thread_rank << "owlqn r" << std::endl;
     //free memory
     delete [] ro_list;
     for(int i = 0; i < m; i++){
@@ -271,5 +290,8 @@ void LR::owlqn(int proc_id, int n_procs){
     }
     delete s_list;
     delete y_list;
+    pthread_mutex_destroy(&mutex);
+    pthread_barrier_destroy(&barrier);
+    std::cout << thread_rank << "owlqn s" << std::endl;
 }
 

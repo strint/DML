@@ -33,6 +33,8 @@ public:
     pid_t main_thread_id;
     float c;
     int m;
+    int barrier_length;
+    int thread_rank;
 
 private:
     void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);
