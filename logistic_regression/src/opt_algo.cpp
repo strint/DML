@@ -15,6 +15,7 @@ OPT_ALGO::~OPT_ALGO(){
     delete [] next_w;
     delete [] global_g;
     delete [] global_next_g;
+    delete [] all_nodes_global_g;
 }
 
 std::vector<std::string> OPT_ALGO::split_line(std::string split_tag, std::vector<std::string>& feature_index){

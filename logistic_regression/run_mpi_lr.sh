@@ -1,3 +1,2 @@
 #!/bin/bash
-
-mpiexec -mca btl ^openib -np 3 ./train 
+mpiexec -mca btl ^openib -np 2 ./train 
