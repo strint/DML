@@ -1,4 +1,8 @@
 .DS_Store
 *.swp
 *.swo
+*.o
+train
 data/
+cblas_LINUX.a
+libblas.a
