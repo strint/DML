@@ -18,29 +18,29 @@ struct ThreadParam{
 void *opt_algo(void *arg){
    ThreadParam *args = (ThreadParam*)arg;
    std::cout << "I'm thread " << args->process_id << " of total of " << args->n_process << " processes" << std::endl;
-   args->lr->owlqn(args->process_id, args->n_process); 
+   args->lr->owlqn(args->process_id, args->n_process);
 }
 
-int main(int argc,char* argv[]){  
+int main(int argc,char* argv[]){
     std::cout<<"cmd: ./train -trainfile -testfile"<<std::endl;
     int myid, numprocs;
     MPI_Status status;
-    MPI_Init(&argc,&argv);
+    MPI_Init(NULL,NULL);
     MPI_Comm_rank(MPI_COMM_WORLD,&myid);
     MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
 
-    //exec by main thread    
+    //exec by main thread
     std::cout << "Num of process: " << numprocs << std::endl;
     const char *train_data_file = argv[1];
     char *test_data_file = argv[2];
     std::string split_tag = " ";
-    
+
     Load_Data ld;
     ld.fea_dim = 0;
     ld.load_data(train_data_file, split_tag);
 
     int root = 0;
-    MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
+    //MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
     std::cout << "Trainning data dimension: " << ld.fea_dim << std::endl;
     std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
@@ -53,19 +53,19 @@ int main(int argc,char* argv[]){
         lr.thread_rank = i;
         ThreadParam param = {&lr, config.n_threads, i, config.n_threads};
         params.push_back(param);
-    } 
+    }
     //multithread start
     for(int i = 0; i < params.size(); i++){
         pthread_t thread_id;
         std::cout << "Thread handle: " << thread_id <<std::endl;
-        int ret = pthread_create(&thread_id, NULL, &opt_algo, (void*)&(params[i])); 
+        int ret = pthread_create(&thread_id, NULL, &opt_algo, (void*)&(params[i]));
         if(ret != 0) std::cout<<"process "<<i<<"failed(create thread faild.)"<<std::endl;
         else threads.push_back(thread_id);
     }
     for(int i = 0; i < threads.size(); i++){//join threads function
-        pthread_join(threads[i], 0); 
+        pthread_join(threads[i], 0);
     }
-   
+
     MPI::Finalize();
     return 0;
 }

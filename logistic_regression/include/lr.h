@@ -10,7 +10,7 @@
 #include <string.h>
 #include <deque>
 #include <pthread.h>
-#include<unistd.h>
+#include <unistd.h>
 
 class LR{
 public:
@@ -18,7 +18,7 @@ public:
     ~LR();
     //call by main thread
     void init_theta();
-    //call by threads 
+    //call by threads
     void owlqn(int proc_id, int n_procs);
     //shared by multithreads
     float *w;//model paramter shared by all threads

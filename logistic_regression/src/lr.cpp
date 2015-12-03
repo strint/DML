@@ -16,7 +16,7 @@ LR::LR(){
 }
 
 LR::~LR(){
-    delete [] w; 
+    delete [] w;
     delete [] next_w;
     delete [] global_g;
     delete [] global_next_g;
@@ -34,22 +34,21 @@ void LR::init_theta(){
 
     global_old_loss_val = 0.0;
     global_new_loss_val = 0.0;
-    
-    main_thread_id = pthread_self();   
+
+    main_thread_id = pthread_self();
     pthread_barrier_init(&barrier, NULL, barrier_length);
- 
+
     float init_w = 0.0;
     for(int j = 0; j < load_data.fea_dim; j++){
         *(w + j) = init_w;
         *(next_w + j) = init_w;
         *(global_g + j) = init_w;
-        *(global_next_g + j) = init_w; 
+        *(global_next_g + j) = init_w;
     }
 }
 
 //----------------------------owlqn--------------------------------------------
-float LR::sigmoid(float x)
-{
+float LR::sigmoid(float x){
     float sgm = 1/(1+exp(-(float)x));
     return (float)sgm;
 }
@@ -128,7 +127,7 @@ void LR::line_search(float *param_g){
 
         pthread_mutex_lock(&mutex);
         global_old_loss_val += old_loss_val;//add old loss value of all threads
-        pthread_mutex_unlock(&mutex); 
+        pthread_mutex_unlock(&mutex);
 
         pid_t local_thread_id;
         local_thread_id = pthread_self();
@@ -164,9 +163,9 @@ void LR::line_search(float *param_g){
 
 void LR::two_loop(int use_list_len, float *local_sub_g, float **s_list, float **y_list, float *ro_list, float *p){
     float *q = new float[load_data.fea_dim];//local variable
-    float *alpha = new float[m]; 
+    float *alpha = new float[m];
     cblas_dcopy(load_data.fea_dim, (double*)local_sub_g, 1, (double*)q, 1);
-    if(use_list_len < m) m = use_list_len; 
+    if(use_list_len < m) m = use_list_len;
 
     for(int loop = 1; loop <= m; ++loop){
         ro_list[loop - 1] = cblas_ddot(load_data.fea_dim, (double*)(&(*y_list)[loop - 1]), 1, (double*)(&(*s_list)[loop - 1]), 1);
@@ -200,7 +199,7 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
     std::cout << thread_rank << " owlqn f" << std::endl;
     loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
     std::cout << thread_rank << " owlqn g" << std::endl;
-    loss_function_subgradient(local_g, local_sub_g); 
+    loss_function_subgradient(local_g, local_sub_g);
     std::cout << thread_rank << " owlqn h" << std::endl;
     //should add code update multithread and all nodes sub_g to global_sub_g
     two_loop(use_list_len, local_sub_g, s_list, y_list, ro_list, p);
@@ -218,12 +217,12 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
     local_thread_id = pthread_self();
     std::cout << thread_rank << " owlqn l" << std::endl;
     if(local_thread_id == main_thread_id){
-        for(int j = 0; j < load_data.fea_dim; j++){ 
+        for(int j = 0; j < load_data.fea_dim; j++){
             *(all_nodes_global_g + j) = 0.0;
         }
         for(int j = 0; j < load_data.fea_dim; j++){//must be pay attention
             *(global_g + j) /= config.n_threads;
-        }   
+        }
         std::cout << thread_rank << " owlqn m" << std::endl;
         MPI_Allreduce(global_g, all_nodes_global_g, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//all_nodes_global_g store shared sum of every nodes search direction
     }
@@ -238,14 +237,14 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
         cblas_daxpy(load_data.fea_dim, -1, (double*)w, 1, (double*)next_w, 1);
         cblas_dcopy(load_data.fea_dim, (double*)next_w, 1, (double*)s_list[(m - use_list_len) % m], 1);
     //update ylist
-        cblas_daxpy(load_data.fea_dim, -1, (double*)global_g, 1, (double*)global_next_g, 1); 
+        cblas_daxpy(load_data.fea_dim, -1, (double*)global_g, 1, (double*)global_next_g, 1);
         cblas_dcopy(load_data.fea_dim, (double*)global_next_g, 1, (double*)y_list[(m - use_list_len) % m], 1);
 
         use_list_len++;
         if(use_list_len > m){
             for(int j = 0; j < load_data.fea_dim; j++){
                 *(*(s_list + abs(m - use_list_len) % m) + j) = 0.0;
-                *(*(y_list + abs(m - use_list_len) % m) + j) = 0.0;        
+                *(*(y_list + abs(m - use_list_len) % m) + j) = 0.0;
             }
         }
         cblas_dcopy(load_data.fea_dim, (double*)next_w, 1, (double*)w, 1);
@@ -263,14 +262,14 @@ void LR::owlqn(int proc_id, int n_procs){
     float **s_list = new float*[m];
     s_list[0] = new float[m * load_data.fea_dim];
     for(int i = 1; i < m; i++){
-        s_list[i] = s_list[i-1] + load_data.fea_dim; 
+        s_list[i] = s_list[i-1] + load_data.fea_dim;
     }
-    
+
     std::cout << thread_rank << " owlqn b" << std::endl;
     float **y_list = new float* [m];
     y_list[0] = new float[m * load_data.fea_dim];
     for(int i = 1; i < m; i++){
-        y_list[i] = y_list[i-1] + load_data.fea_dim; 
+        y_list[i] = y_list[i-1] + load_data.fea_dim;
     }
 
     std::cout << thread_rank << " owlqn c" << std::endl;
@@ -278,7 +277,7 @@ void LR::owlqn(int proc_id, int n_procs){
     int step = 0;
     while(step < 3){
         std::cout << thread_rank << " owlqn d" << std::endl;
-        parallel_owlqn(use_list_len, ro_list, s_list, y_list);        
+        parallel_owlqn(use_list_len, ro_list, s_list, y_list);
         step++;
     }
     std::cout << thread_rank << " owlqn r" << std::endl;
@@ -294,4 +293,3 @@ void LR::owlqn(int proc_id, int n_procs){
     pthread_barrier_destroy(&barrier);
     std::cout << thread_rank << " owlqn s" << std::endl;
 }
-
