@@ -61,3 +61,7 @@ void Load_Data::load_data(const char* data_file, std::string split_tag){
     }
     fin.close();
 }
+
+int Load_Data::get_data_num() {
+    return label.size();
+}

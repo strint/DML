@@ -9,6 +9,7 @@ class Load_Data{
 public:
     Load_Data();
     ~Load_Data();
+    int get_data_num();
     void load_data(const char *train_file, std::string split_tag);
     void split_line(const std::string& line, const std::string& split_tag, std::vector<std::string>& feature_index);
     void get_feature_struct(std::vector<std::string>& feature_index, std::vector<sparse_feature>& key_val);

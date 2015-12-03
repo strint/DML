@@ -9,17 +9,24 @@
 #include "config.h"
 
 struct ThreadParam{
-    LR *lr;
     int threads_num;
+    int thread_rank;
     int process_id;
     int n_process;
+    Load_Data *train_data;
 };
 
 void *opt_algo(void *arg){
-   ThreadParam *args = (ThreadParam*)arg;
-   std::cout << "I'm thread " << args->process_id << " of total of " << args->n_process << " processes" << std::endl;
-   args->lr->owlqn(args->process_id, args->n_process);
+    ThreadParam *args = (ThreadParam*)arg;
+    std::cout << "I'm thread " << args->thread_rank << " of total " << args->threads_num << " threads" << std::endl;
+    LR lr;
+    lr.threads_num = args->threads_num;
+    lr.thread_rank = args->thread_rank;
+    lr.train_data = args->train_data;
+    lr.init_theta();
+    lr.owlqn(args->thread_rank, args->threads_num);
 }
+
 
 int main(int argc,char* argv[]){
     std::cout<<"cmd: ./train -trainfile -testfile"<<std::endl;
@@ -35,29 +42,25 @@ int main(int argc,char* argv[]){
     char *test_data_file = argv[2];
     std::string split_tag = " ";
 
-    Load_Data ld;
-    ld.fea_dim = 0;
-    ld.load_data(train_data_file, split_tag);
+    Load_Data train_data;
+    train_data.fea_dim = 0;
+    train_data.load_data(train_data_file, split_tag);
 
     int root = 0;
     //MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
-    std::cout << "Trainning data dimension: " << ld.fea_dim << std::endl;
+    std::cout << "Trainning data dimension: " << train_data.fea_dim << std::endl;
+    std::cout << "Trainning data num: " << train_data.get_data_num() << std::endl;
     std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
-    CONFIG config;
-    config.n_threads = 2;
-    for(int i = 0; i < config.n_threads; i++){//construct parameter
-        LR lr;
-        lr.init_theta();
-        lr.barrier_length = config.n_threads;
-        lr.thread_rank = i;
-        ThreadParam param = {&lr, config.n_threads, i, config.n_threads};
+    //CONFIG config;
+    int n_threads = 2;
+    for(int i = 0; i < n_threads; i++){//construct parameter
+        ThreadParam param = {n_threads, i, n_threads, i, &train_data};
         params.push_back(param);
     }
     //multithread start
     for(int i = 0; i < params.size(); i++){
         pthread_t thread_id;
-        std::cout << "Thread handle: " << thread_id <<std::endl;
         int ret = pthread_create(&thread_id, NULL, &opt_algo, (void*)&(params[i]));
         if(ret != 0) std::cout<<"process "<<i<<"failed(create thread faild.)"<<std::endl;
         else threads.push_back(thread_id);

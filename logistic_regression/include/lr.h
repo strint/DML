@@ -11,6 +11,7 @@
 #include <deque>
 #include <pthread.h>
 #include <unistd.h>
+#include "load_data.h"
 
 class LR{
 public:
@@ -33,8 +34,9 @@ public:
     pid_t main_thread_id;
     float c;
     int m;
-    int barrier_length;
+    int threads_num;
     int thread_rank;
+    Load_Data *train_data; //global trainning data
 
 private:
     void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);
