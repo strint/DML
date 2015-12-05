@@ -53,7 +53,7 @@ int main(int argc,char* argv[]){
     std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
     //CONFIG config;
-    int n_threads = 4;
+    int n_threads = 2;
     LR::init_thread_var(n_threads);
     for(int i = 0; i < n_threads; i++){//construct parameter
         ThreadParam param = {n_threads, i, n_threads, i, &train_data};

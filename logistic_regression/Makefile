@@ -3,29 +3,29 @@ LIB = -L/opt/OpenBLAS/lib
 INCLUDE = -I/opt/OpenBLAS/include 
 #train code
 train:lr_main.o lr.o load_data.o 
-	mpicxx -o train lr_main.o lr.o load_data.o $(LIB)  -lopenblas -lpthread
+	mpicxx -g -o train lr_main.o lr.o load_data.o $(LIB)  -lopenblas -lpthread
 
 lr_main.o: src/lr_main.cpp 
-	mpicxx $(INCLUDE) -I ./include -c src/lr_main.cpp
+	mpicxx $(INCLUDE) -g -I ./include -c src/lr_main.cpp
 
 load_data.o: src/load_data.cpp
-	mpicxx $(INCLUDE) -I ./include -c src/load_data.cpp
+	mpicxx $(INCLUDE) -g -I ./include -c src/load_data.cpp
 
 lr.o: src/lr.cpp  
-	mpicxx $(INCLUDE) -I ./include -c src/lr.cpp
+	mpicxx $(INCLUDE) -g -I ./include -c src/lr.cpp
 
 #predict code
 predict: predict.o
 	mpicxx -g -o predict -lpthread $(LIB) -lopenblas predict.o
 
 predict.o: src/predict.cpp
-	mpicxx $(INCLUDE) -c src/predict.cpp
+	mpicxx $(INCLUDE) -g -c src/predict.cpp
 
 #make train uttest
 train_ut: train_uttest.o lr.o
-	mpicxx -o train_ut train_uttest.o lr.o $(LIB) -lopenblas -lpthread -L ./lib -lgtest
+	mpicxx -g -o train_ut train_uttest.o lr.o $(LIB) -lopenblas -lpthread -L ./lib -lgtest
 
 train_uttest.o: src/train_uttest.cpp
-	mpicxx  -I ./include -c src/train_uttest.cpp
+	mpicxx -g -I ./include -c src/train_uttest.cpp
 clean:
 	rm -f *~ train predict train_ut *.o

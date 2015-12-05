@@ -126,6 +126,7 @@ void LR::fix_dir(float *w, float *next_w){
 }
 
 void LR::line_search(float *param_g){
+    std::cout << thread_rank << " owlqn line_search 1" << std::endl;
     float alpha = 1.0;
     float beta = 1e-4;
     float backoff = 0.5;
@@ -147,26 +148,34 @@ void LR::line_search(float *param_g){
         for(int j = 0; j < train_data->fea_dim; j++){
             *(next_w + j) = *(w + j) + alpha * *(param_g + j);//local_g equal all nodes g
         }
+        std::cout << thread_rank << " owlqn line_search fix_dir 1" << std::endl;
         fix_dir(w, next_w);//orthant limited
+        std::cout << thread_rank << " owlqn line_search fix_dir 2" << std::endl;
         new_loss_val = loss_function_value(next_w);//cal new loss per thread
 
         pthread_mutex_lock(&mutex);
         global_new_loss_val += new_loss_val;//sum all threads loss value
         pthread_mutex_unlock(&mutex);
 
+        std::cout << thread_rank << " owlqn line_search 2" << std::endl;
         if(local_thread_id == main_thread_id){
             MPI_Allreduce(&global_new_loss_val, &all_nodes_new_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//sum all nodes loss.
         }
 
+        std::cout << thread_rank << " owlqn line_search 3" << std::endl;
         pthread_barrier_wait(&barrier);
         loss_function_gradient(next_w, global_next_g);
+        std::cout << thread_rank << " owlqn line_search 4" << std::endl;
 
         if(all_nodes_new_loss_val <= all_nodes_old_loss_val + beta * cblas_ddot(train_data->fea_dim, (double*)param_g, 1, (double*)global_next_g, 1)){
             break;
         }
+        std::cout << thread_rank << " owlqn line_search 5" << std::endl;
         alpha *= backoff;
+        std::cout << thread_rank << " owlqn line_search 6" << std::endl;
         break;
     }
+    std::cout << thread_rank << " owlqn line_search 7" << std::endl;
 }
 
 void LR::two_loop(int use_list_len, float *local_sub_g, float **s_list, float **y_list, float *ro_list, float *p){
@@ -259,6 +268,7 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
             }
         }
         cblas_dcopy(train_data->fea_dim, (double*)next_w, 1, (double*)w, 1);
+        std::cout << thread_rank << " owlqn q main" << std::endl;
     }
     pthread_barrier_wait(&barrier);
     std::cout << thread_rank << " owlqn q" << std::endl;
