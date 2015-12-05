@@ -8,8 +8,8 @@ extern "C"{
 #include <cblas.h>
 }
 
-//Load_Data train_data->
-//CONFIG config;
+pthread_mutex_t LR::mutex;
+pthread_barrier_t LR::barrier;
 
 LR::LR(){
 }
@@ -20,6 +20,16 @@ LR::~LR(){
     delete [] global_g;
     delete [] global_next_g;
     delete [] all_nodes_global_g;
+}
+
+void LR::init_thread_var(int threads_num) {
+    pthread_mutex_init(&mutex, NULL);
+    pthread_barrier_init(&barrier, NULL, threads_num);
+}
+
+void LR::destroy_thread_var() {
+    pthread_barrier_destroy(&barrier);
+    pthread_mutex_destroy(&mutex);
 }
 
 void LR::init_theta(){
@@ -255,8 +265,6 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
 }
 
 void LR::owlqn(int proc_id, int n_procs){
-    pthread_mutex_init(&mutex, NULL);
-    pthread_barrier_init(&barrier, NULL, threads_num);
     std::cout << train_data->fea_dim << std::endl;
     std::cout << thread_rank << " owlqn start" << std::endl;
     float *ro_list = new float[train_data->fea_dim];
@@ -292,7 +300,5 @@ void LR::owlqn(int proc_id, int n_procs){
     }
     delete s_list;
     delete y_list;
-    pthread_barrier_destroy(&barrier);
-    pthread_mutex_destroy(&mutex);
     std::cout << thread_rank << " owlqn s" << std::endl;
 }

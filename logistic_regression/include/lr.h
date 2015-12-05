@@ -37,6 +37,8 @@ public:
     int threads_num;
     int thread_rank;
     Load_Data *train_data; //global trainning data
+    static void init_thread_var(int threads_num);
+    static void destroy_thread_var();
 
 private:
     void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);
@@ -48,7 +50,7 @@ private:
     float sigmoid(float x);
     void fix_dir(float *w, float *next_w);
 
-    pthread_mutex_t mutex;
-    pthread_barrier_t barrier;
+    static pthread_mutex_t mutex;
+    static pthread_barrier_t barrier;
 };
 #endif

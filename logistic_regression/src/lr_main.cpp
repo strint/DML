@@ -53,7 +53,8 @@ int main(int argc,char* argv[]){
     std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
     //CONFIG config;
-    int n_threads = 2;
+    int n_threads = 4;
+    LR::init_thread_var(n_threads);
     for(int i = 0; i < n_threads; i++){//construct parameter
         ThreadParam param = {n_threads, i, n_threads, i, &train_data};
         params.push_back(param);
@@ -68,7 +69,7 @@ int main(int argc,char* argv[]){
     for(int i = 0; i < threads.size(); i++){//join threads function
         pthread_join(threads[i], 0);
     }
-
+    LR::destroy_thread_var();
     MPI::Finalize();
     return 0;
 }
