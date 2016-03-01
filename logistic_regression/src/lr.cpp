@@ -194,10 +194,10 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
     float *local_sub_g = new float[load_data.fea_dim];//single thread subgradient
     float *p = new float[load_data.fea_dim];//single thread search direction.after two loop
     loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
-    return;
     loss_function_subgradient(local_g, local_sub_g); 
     //should add code update multithread and all nodes sub_g to global_sub_g
     two_loop(use_list_len, local_sub_g, s_list, y_list, ro_list, p);
+    return;
 
     pthread_mutex_lock(&mutex);
     for(int j = 0; j < load_data.fea_dim; j++){

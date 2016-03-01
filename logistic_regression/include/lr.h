@@ -33,7 +33,7 @@ public:
     float c;
     int m;
 
-private:
+//private:
     void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);
     void loss_function_gradient(float *para_w, float *para_g);
     void loss_function_subgradient(float *local_g, float *local_sub_g);

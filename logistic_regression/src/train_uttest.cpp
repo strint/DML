@@ -8,26 +8,36 @@ class TrainTest: public testing::Test
         //TrainTest() {}
         //virtual ~TrainTest(){}
 
-        OPT_ALGO* opt;
+        LR* lr;
         
         virtual void SetUp()
         {
-            opt = new OPT_ALGO();
+            lr = new LR();
         }
         void TearDown()
         {
-            delete opt;
+            delete lr;
         }
 };
-
+/*
 TEST_F(TrainTest, test_test)
 {
     float a;
     a = 1.0;
-    ASSERT_EQ(1.0, opt->sigmoid(a));
+    ASSERT_EQ(1.0, lr->sigmoid(a));
 }
+*/
 TEST_F(TrainTest, test_testb){
-    
+    float *w = new float[3];
+    w[0] = 1.0;
+    w[1] = 1.0;
+    w[2] = 1.0;
+    float* g = new float[3];
+    g[0] = 1.0;
+    g[1] = 1.0;
+    g[2] = 1.0;
+
+    lr->loss_function_gradient(w, g);  
 }
 
 int main(int argc, char** argv){
