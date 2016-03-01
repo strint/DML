@@ -36,7 +36,7 @@ void LR::init_theta(){
     global_new_loss_val = 0.0;
     
     main_thread_id = pthread_self();   
-    pthread_barrier_init(&barrier, NULL, 3);
+    pthread_barrier_init(&barrier, NULL, 2);
  
     float init_w = 0.0;
     for(int j = 0; j < load_data.fea_dim; j++){
@@ -72,19 +72,16 @@ float LR::loss_function_value(float *para_w){
 void LR::loss_function_gradient(float *para_w, float *para_g){
     float f = 0.0;
     for(int i = 0; i < load_data.fea_matrix.size(); i++){
-        float x = 0.0, value = 0.0;
         int index;
+        float wx = 0.0, value = 0.0;
         for(int j = 0; j <load_data.fea_matrix[i].size(); j++){
             index = load_data.fea_matrix[i][j].idx;
             value = load_data.fea_matrix[i][j].val;
-            x += *(para_w + index) * value;
+            wx += *(para_w + index) * value;
         }
         for(int j = 0; j < load_data.fea_matrix[i].size(); j++){
-            *(para_g + j) += load_data.label[i] * sigmoid(x) * value + (1 - load_data.label[i]) * sigmoid(x) * value;
+            *(para_g + j) += load_data.label[i] * sigmoid(wx) * value + (1 - load_data.label[i]) * sigmoid(wx) * value;
         }
-    }
-    for(int j = 0; j < load_data.fea_dim; j++){
-        *(para_g + j) /= load_data.fea_matrix.size();
     }
 }
 
@@ -197,6 +194,7 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
     float *local_sub_g = new float[load_data.fea_dim];//single thread subgradient
     float *p = new float[load_data.fea_dim];//single thread search direction.after two loop
     loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
+    return;
     loss_function_subgradient(local_g, local_sub_g); 
     //should add code update multithread and all nodes sub_g to global_sub_g
     two_loop(use_list_len, local_sub_g, s_list, y_list, ro_list, p);
@@ -242,6 +240,7 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
 }
 
 void LR::owlqn(int proc_id, int n_procs){
+    std::cout<<proc_id<<"---"<<n_procs<<std::endl;
     float *ro_list = new float[load_data.fea_dim];
 
     float **s_list = new float*[m];
@@ -262,7 +261,8 @@ void LR::owlqn(int proc_id, int n_procs){
         parallel_owlqn(use_list_len, ro_list, s_list, y_list);        
         step++;
     }
-    pthread_barrier_destroy(&barrier);
+    pthread_barrier_wait(&barrier);
+    return;
     //free memory
     delete [] ro_list;
     for(int i = 0; i < m; i++){

@@ -1,4 +1,4 @@
-#include "opt_algo.h"
+#include "../include/lr.h"
 #include <vector>
 #include "gtest/gtest.h"
 
@@ -25,6 +25,9 @@ TEST_F(TrainTest, test_test)
     float a;
     a = 1.0;
     ASSERT_EQ(1.0, opt->sigmoid(a));
+}
+TEST_F(TrainTest, test_testb){
+    
 }
 
 int main(int argc, char** argv){
