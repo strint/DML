@@ -61,6 +61,7 @@ int main(int argc,char* argv[]){
     CONFIG config;
     config.n_threads = 2;
     LR lr;
+    lr.rank = rank;
     lr.init_theta();
     for(int i = 0; i < config.n_threads; i++){//construct parameter
         ThreadParam param = {&lr, config.n_threads, rank, numprocs};

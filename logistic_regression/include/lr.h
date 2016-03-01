@@ -32,7 +32,7 @@ public:
     pid_t main_thread_id;
     float c;
     int m;
-
+    int rank;
 //private:
     void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);
     void loss_function_gradient(float *para_w, float *para_g);

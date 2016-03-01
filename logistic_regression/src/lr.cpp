@@ -143,9 +143,10 @@ void LR::line_search(float *param_g){
         pthread_mutex_lock(&mutex);
         global_new_loss_val += new_loss_val;//sum all threads loss value
         pthread_mutex_unlock(&mutex);
-
-        if(local_thread_id == main_thread_id){
-            MPI_Allreduce(&global_new_loss_val, &all_nodes_new_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//sum all nodes loss.
+        if(lr.rank != 0){
+            if(local_thread_id == main_thread_id){
+                MPI_Allreduce(&global_new_loss_val, &all_nodes_new_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//sum all nodes loss.
+            }
         }
 
         pthread_barrier_wait(&barrier);
@@ -194,10 +195,10 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
     float *local_sub_g = new float[load_data.fea_dim];//single thread subgradient
     float *p = new float[load_data.fea_dim];//single thread search direction.after two loop
     loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
+    return;
     loss_function_subgradient(local_g, local_sub_g); 
     //should add code update multithread and all nodes sub_g to global_sub_g
     two_loop(use_list_len, local_sub_g, s_list, y_list, ro_list, p);
-    return;
 
     pthread_mutex_lock(&mutex);
     for(int j = 0; j < load_data.fea_dim; j++){
@@ -207,14 +208,10 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
 
     pid_t local_thread_id;
     local_thread_id = pthread_self();
-    if(local_thread_id == main_thread_id){
-        for(int j = 0; j < load_data.fea_dim; j++){ 
-            *(all_nodes_global_g + j) = 0.0;
+    if(lr.rank == 0){
+        if(local_thread_id == main_thread_id){
+   
         }
-        for(int j = 0; j < load_data.fea_dim; j++){//must be pay attention
-            *(global_g + j) /= config.n_threads;
-        }   
-        MPI_Allreduce(global_g, all_nodes_global_g, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//all_nodes_global_g store shared sum of every nodes search direction
     }
     pthread_barrier_wait(&barrier);
     //should be synchronous all threads
