@@ -5,7 +5,7 @@
 #include <vector>
 #include "data_struct.h"
 
-class Load_Data{
+class Load_Data {
 public:
     Load_Data();
     ~Load_Data();

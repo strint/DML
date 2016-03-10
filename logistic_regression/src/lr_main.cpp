@@ -8,7 +8,9 @@
 #include "gtest/gtest.h"
 #include "config.h"
 
+#ifndef MPI_MAX_PROCESSOR_NAME
 #define MPI_MAX_PROCESSOR_NAME 100
+#endif
 struct ThreadParam{
     LR *lr;
     int threads_num;
@@ -64,6 +66,8 @@ int main(int argc,char* argv[]){
     lr.rank = rank;
     lr.feature_dim = load_data.fea_dim;
     lr.init_theta();
+    //lr.data = static_cast<void*>(&load_data);
+    lr.data = &load_data;
     for(int i = 0; i < config.n_threads; i++){//construct parameter
         ThreadParam param = {&lr, config.n_threads, rank, numprocs};
         params.push_back(param);

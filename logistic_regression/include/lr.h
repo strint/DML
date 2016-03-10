@@ -10,6 +10,7 @@
 #include <string.h>
 #include <deque>
 #include <pthread.h>
+#include "load_data.h"
 
 class LR{
 public:
@@ -29,6 +30,8 @@ public:
     float all_nodes_old_loss_val;
     float global_new_loss_val;//loss value of loss function when arrive new w
     float all_nodes_new_loss_val;
+    //void* data;
+    Load_Data* data;
     pid_t main_thread_id;
     int feature_dim;
     float c;

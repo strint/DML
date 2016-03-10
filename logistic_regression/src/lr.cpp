@@ -38,6 +38,7 @@ void LR::init_theta(){
     main_thread_id = pthread_self();   
     pthread_barrier_init(&barrier, NULL, 2);
  
+    data = NULL;
     float init_w = 0.0;
     for(int j = 0; j < feature_dim; j++){
         *(w + j) = init_w;
@@ -71,17 +72,24 @@ float LR::loss_function_value(float *para_w){
 
 void LR::loss_function_gradient(float *para_w, float *para_g){
     float f = 0.0;
-    for(int i = 0; i < load_data.fea_matrix.size(); i++){
+    //std::cout<<data->fea_matrix.size()<<"----"<<std::endl;
+    for(int i = 0; i < data->fea_matrix.size(); i++){
         int index;
         float wx = 0.0, value = 0.0;
-        for(int j = 0; j <load_data.fea_matrix[i].size(); j++){
-            index = load_data.fea_matrix[i][j].idx;
-            value = load_data.fea_matrix[i][j].val;
+        for(int j = 0; j <data->fea_matrix[i].size(); j++){
+            index = data->fea_matrix[i][j].idx;
+            value = data->fea_matrix[i][j].val;
+            //std::cout<<"index="<<index<<std::endl;
+            //std::cout<<"value="<<value<<std::endl;
             wx += *(para_w + index) * value;
         }
-        for(int j = 0; j < load_data.fea_matrix[i].size(); j++){
-            *(para_g + j) += load_data.label[i] * sigmoid(wx) * value + (1 - load_data.label[i]) * sigmoid(wx) * value;
+        for(int j = 0; j < data->fea_matrix[i].size(); j++){
+            //std::cout<<data->label[i]<<std::endl;
+            *(para_g + j) += data->label[i] * sigmoid(wx) * value + (1 - data->label[i]) * sigmoid(wx) * value;
         }
+    }
+    for(int i = 0; i < data->fea_matrix[i].size(); i++){
+        std::cout<<*(para_g + i) <<std::endl;
     }
 }
 
@@ -193,11 +201,10 @@ void LR::two_loop(int use_list_len, float *local_sub_g, float **s_list, float **
 void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list){
     //define and initial local parameters
     float *local_g = new float[feature_dim];//single thread gradient
-    std::cout<<feature_dim<<std::endl;
     float *local_sub_g = new float[feature_dim];//single thread subgradient
     float *p = new float[feature_dim];//single thread search direction.after two loop
-    return;
     loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
+
     return;
     loss_function_subgradient(local_g, local_sub_g); 
     //should add code update multithread and all nodes sub_g to global_sub_g
@@ -243,15 +250,11 @@ void LR::parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float*
 void LR::owlqn(int proc_id, int n_procs){
     std::cout<<proc_id<<"---"<<n_procs<<std::endl;
     float *ro_list = new float[feature_dim];
-    //float **s_list = new float*[m];
-    //s_list[0] = new float[m * feature_dim];
     float** s_list = (float**)malloc(sizeof(float*)*m);
     s_list[0] = new float[feature_dim];
     for(int i = 0; i < m; i++){
         s_list[i] = (float*)malloc(sizeof(float)*feature_dim); 
     }
-    //float **y_list = new float* [m];
-    //y_list[0] = new float[m * feature_dim];
     float** y_list = (float**)malloc(sizeof(float*)*m);
     for(int i = 0; i < m; i++){
         y_list[i] = (float*)malloc(sizeof(float)*feature_dim); 
