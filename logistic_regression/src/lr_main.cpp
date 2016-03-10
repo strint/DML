@@ -62,6 +62,7 @@ int main(int argc,char* argv[]){
     config.n_threads = 2;
     LR lr;
     lr.rank = rank;
+    lr.feature_dim = load_data.fea_dim;
     lr.init_theta();
     for(int i = 0; i < config.n_threads; i++){//construct parameter
         ThreadParam param = {&lr, config.n_threads, rank, numprocs};

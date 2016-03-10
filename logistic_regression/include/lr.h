@@ -30,6 +30,7 @@ public:
     float global_new_loss_val;//loss value of loss function when arrive new w
     float all_nodes_new_loss_val;
     pid_t main_thread_id;
+    int feature_dim;
     float c;
     int m;
     int rank;
