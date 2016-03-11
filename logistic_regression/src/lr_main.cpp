@@ -42,9 +42,7 @@ int main(int argc,char* argv[]){
     load_data.fea_dim = 0;
     load_data.load_data(train_data_file, split_tag);
     int root = 0;
-    //MPI_Bcast(&load_data.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
     if(rank != 0){
-        //MPI_Send(&send_fea_dim, 1, MPI_UINT64_T, 0, tag, MPI_COMM_WORLD, &req);
         MPI_Send(&load_data.fea_dim, 1, MPI_UINT64_T, 0, tag, MPI_COMM_WORLD);
     }
     else if(rank == 0){
@@ -52,7 +50,6 @@ int main(int argc,char* argv[]){
         int64_t sum = 0;
         int64_t recv_data;
         while(rank_num--){
-            //MPI_Recv(&recv_data, 1, MPI_UINT64_T, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &req);
             MPI_Recv(&recv_data, 1, MPI_UINT64_T, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
             sum += recv_data;
         }
@@ -65,14 +62,12 @@ int main(int argc,char* argv[]){
     LR lr;
     lr.rank = rank;
     lr.feature_dim = load_data.fea_dim;
-    lr.init_theta();
-    //lr.data = static_cast<void*>(&load_data);
     lr.data = &load_data;
+    lr.init_theta();
     for(int i = 0; i < config.n_threads; i++){//construct parameter
         ThreadParam param = {&lr, config.n_threads, rank, numprocs};
         params.push_back(param);
     } 
-    //multithread start
     for(int i = 0; i < params.size(); i++){
         pthread_t thread_id;
         //std::cout<<thread_id<<std::endl;
@@ -83,7 +78,6 @@ int main(int argc,char* argv[]){
     for(int i = 0; i < threads.size(); i++){//join threads function
         pthread_join(threads[i], 0); 
     }
-   
     MPI::Finalize();
     return 0;
 }

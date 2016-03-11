@@ -2,15 +2,10 @@
 #include <iostream>
 #include <vector>
 #include "lr.h"
-#include "load_data.h"
-#include "config.h"
 
 extern "C"{
 #include <cblas.h>
 }
-
-Load_Data load_data;
-CONFIG config;
 
 LR::LR(){
 }
@@ -48,11 +43,8 @@ void LR::init_theta(){
     }
 }
 
-//----------------------------owlqn--------------------------------------------
-double LR::sigmoid(double x)
-{
-    double sgm = 1/(1+exp(-(double)x));
-    return (double)sgm;
+double LR::sigmoid(double x){
+    return 1/(1+exp(-x));
 }
 
 double LR::loss_function_value(double *para_w){
@@ -64,7 +56,7 @@ double LR::loss_function_value(double *para_w){
             double val = data->fea_matrix[i][j].val;
             x += *(para_w + id) * val;//maybe add bias later
         }
-        double l = data->label[i] * log(1/sigmoid(-1 * x)) + (1 - data->label[i]) * log(1/sigmoid(x));
+        double l = data->label[i] * log(1/sigmoid(-1 * x)) + (1 - data->label[i]) * log(1 - 1/sigmoid(x));
         f += l;
     }
     return f;
