@@ -57,17 +57,18 @@ double LR::sigmoid(double x)
 
 double LR::loss_function_value(double *para_w){
     double f = 0.0;
-    for(int i = 0; i < load_data.fea_matrix.size(); i++){
+    for(int i = 0; i < data->fea_matrix.size(); i++){
         double x = 0.0;
-        for(int j = 0; j < load_data.fea_matrix[i].size(); j++){
-            int id = load_data.fea_matrix[i][j].idx;
-            double val = load_data.fea_matrix[i][j].val;
+        for(int j = 0; j < data->fea_matrix[i].size(); j++){
+            int id = data->fea_matrix[i][j].idx;
+            double val = data->fea_matrix[i][j].val;
             x += *(para_w + id) * val;//maybe add bias later
         }
-        double l = load_data.label[i] * log(1/sigmoid(-1 * x)) + (1 - load_data.label[i]) * log(1/sigmoid(x));
+        double l = data->label[i] * log(1/sigmoid(-1 * x)) + (1 - data->label[i]) * log(1/sigmoid(x));
         f += l;
     }
     return f;
+
 }
 
 void LR::loss_function_gradient(double *para_w, double *para_g){
@@ -85,7 +86,7 @@ void LR::loss_function_gradient(double *para_w, double *para_g){
         }
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
             //std::cout<<data->label[i]<<std::endl;
-            *(para_g + j) += data->label[i] * sigmoid(wx) * value + (1 - data->label[i]) * sigmoid(wx) * value;
+            *(para_g + j) += (data->label[i] - sigmoid(wx)) * value;
         }
     }
     //for(int i = 0; i < data->fea_matrix[i].size(); i++){
@@ -131,12 +132,13 @@ void LR::line_search(double *param_g){
     double backoff = 0.5;
     double old_loss_val = 0.0, new_loss_val = 0.0;
     while(true){
+        
         old_loss_val = loss_function_value(w);//cal loss value per thread
-
+        //std::cout<<old_loss_val<<std::endl;    
         pthread_mutex_lock(&mutex);
         global_old_loss_val += old_loss_val;//add old loss value of all threads
         pthread_mutex_unlock(&mutex); 
-
+        //std::cout<<global_old_loss_val<<std::endl;
         pid_t local_thread_id;
         local_thread_id = pthread_self();
         if(local_thread_id == main_thread_id){
@@ -181,11 +183,10 @@ void LR::two_loop(int use_list_len, double *local_sub_g, double **s_list, double
     }*/
     //free(p);
     cblas_dcopy(feature_dim, local_sub_g, 1, q, 1);
-    for(int i = 0; i < feature_dim; i++){
+    /*for(int i = 0; i < feature_dim; i++){
         std::cout<<*(q + i) << std::endl;
-    }
+    }*/
     if(use_list_len < m) m = use_list_len; 
-    return;
     for(int loop = 1; loop <= m; ++loop){
         ro_list[loop - 1] = cblas_ddot(feature_dim, (double*)(&(*y_list)[loop - 1]), 1, (double*)(&(*s_list)[loop - 1]), 1);
         alpha[loop] = cblas_ddot(feature_dim, (double*)(&(*s_list)[loop - 1]), 1, (double*)q, 1)/ro_list[loop - 1];
@@ -196,17 +197,16 @@ void LR::two_loop(int use_list_len, double *local_sub_g, double **s_list, double
     for(int j = 0; j < feature_dim; j++){
         last_y[j] = *((*y_list + m - 1) + j);
     }
-
     double ydoty = cblas_ddot(feature_dim, (double*)last_y, 1, (double*)last_y, 1);
     float gamma = ro_list[m - 1]/ydoty;
     cblas_sscal(feature_dim, gamma, p, 1);
-
     for(int loop = m; loop >=1; --loop){
         double beta = cblas_ddot(feature_dim, (double*)(&(*y_list)[m - loop]), 1, (double*)p, 1)/ro_list[m - loop];
         cblas_daxpy(feature_dim, alpha[loop] - beta, (double*)(&(*s_list)[m - loop]), 1, (double*)p, 1);
     }
     delete [] alpha;
     delete [] last_y;
+    //std::cout<<11111<<std::endl;
 }
 
 void LR::parallel_owlqn(int use_list_len, double* ro_list, double** s_list, double** y_list){
@@ -218,13 +218,11 @@ void LR::parallel_owlqn(int use_list_len, double* ro_list, double** s_list, doub
     loss_function_subgradient(local_g, local_sub_g); 
     //should add code update multithread and all nodes sub_g to global_sub_g
     two_loop(use_list_len, local_sub_g, s_list, y_list, ro_list, p);
-    return;
     pthread_mutex_lock(&mutex);
     for(int j = 0; j < feature_dim; j++){
         *(global_g + j) += *(p + j);//update global direction of all threads
     }
     pthread_mutex_unlock(&mutex);
-
     pid_t local_thread_id;
     local_thread_id = pthread_self();
     //if(lr.rank == 0){
@@ -282,6 +280,5 @@ void LR::owlqn(int proc_id, int n_procs){
     }
     free(s_list);
     free(y_list);
-    return;
 }
 
