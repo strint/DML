@@ -3,6 +3,6 @@
 
 struct sparse_feature{
     int idx;
-    float val;
+    double val;
 };
 #endif

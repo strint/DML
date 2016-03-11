@@ -14,7 +14,7 @@ public:
     void get_feature_struct(std::vector<std::string>& feature_index, std::vector<sparse_feature>& key_val);
 
     std::vector<std::vector<sparse_feature> > fea_matrix;
-    std::vector<float> label;
+    std::vector<double> label;
     sparse_feature sf;
     long int fea_dim;
 };
