@@ -221,7 +221,10 @@ void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_
         if(local_thread_id == main_thread_id){
             MPI_Status status;
             double* tmp_global_g = new double[feature_dim];
-            MPI_Recv(global_g, feature_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
+            MPI_Recv(tmp_global_g, feature_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
+           for(int j = 0; j < feature_dim; j++){
+               *(all_nodes_global_g + j) += *(tmp_global_g + j);
+           }
         }
     }
     pthread_barrier_wait(&barrier);
