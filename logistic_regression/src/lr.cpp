@@ -212,9 +212,16 @@ void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_
     pid_t local_thread_id;
     local_thread_id = pthread_self();
     //if(lr.rank == 0){
-    if(rank == 0){
+    if(rank != 0){
         if(local_thread_id == main_thread_id){
-            MPI_Send(global_g, feature_dim, MPI_FLOAT, 0, 2012, MPI_COMM_WORLD); 
+            MPI_Send(global_g, feature_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD); 
+        }
+    }
+    else if(rank == 0){
+        if(local_thread_id == main_thread_id){
+            MPI_Status status;
+            double* tmp_global_g = new double[feature_dim];
+            MPI_Recv(global_g, feature_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
         }
     }
     pthread_barrier_wait(&barrier);
