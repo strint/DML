@@ -50,17 +50,16 @@ double LR::sigmoid(double x){
 double LR::loss_function_value(double *para_w){
     double f = 0.0;
     for(int i = 0; i < data->fea_matrix.size(); i++){
-        double x = 0.0;
+        double wx = 0.0;
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
             int id = data->fea_matrix[i][j].idx;
             double val = data->fea_matrix[i][j].val;
-            x += *(para_w + id) * val;//maybe add bias later
+            wx += -*(para_w + id) * val;//maybe add bias later
         }
-        double l = data->label[i] * log(1/sigmoid(-1 * x)) + (1 - data->label[i]) * log(1 - 1/sigmoid(x));
+        double l = data->label[i] * log(sigmoid(wx)) + (1 - data->label[i]) * log(1 - sigmoid(wx));
         f += l;
     }
-    return f;
-
+    return f / data->fea_matrix.size();
 }
 
 void LR::loss_function_gradient(double *para_w, double *para_g){
@@ -78,7 +77,7 @@ void LR::loss_function_gradient(double *para_w, double *para_g){
         }
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
             //std::cout<<data->label[i]<<std::endl;
-            *(para_g + j) += (data->label[i] - sigmoid(wx)) * value;
+            *(para_g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
         }
     }
     //for(int i = 0; i < data->fea_matrix[i].size(); i++){
@@ -92,17 +91,17 @@ void LR::loss_function_subgradient(double * local_g, double *local_sub_g){
             *(local_sub_g + j) = -1 * *(local_g + j);
         }
     }
-    else{
+    else if(c != 0.0){
         for(int j = 0; j < feature_dim; j++){
             if(*(w + j) > 0){
-                *(local_sub_g + j) = *(local_g + j) - c;
+                *(local_sub_g + j) = *(local_g + j) + c;
             }
             else if(*(w + j) < 0){
                 *(local_sub_g + j) = *(local_g + j) - c;
             }
             else {
-                if(*(local_g + j) - c > 0) *(local_sub_g + j) = c - *(local_g + j);
-                else if(*(local_g + j) - c < 0) *(local_sub_g + j) = *(local_g + j) - c;
+                if(*(local_g + j) - c > 0) *(local_sub_g + j) = *(local_g + j) - c;//左导数
+                else if(*(local_g + j) + c < 0) *(local_sub_g + j) = *(local_g + j) + c;
                 else *(local_sub_g + j) = 0;
             }
             //std::cout<<*(local_sub_g + j)<<std::endl;
@@ -124,7 +123,6 @@ void LR::line_search(double *param_g){
     double backoff = 0.5;
     double old_loss_val = 0.0, new_loss_val = 0.0;
     while(true){
-        
         old_loss_val = loss_function_value(w);//cal loss value per thread
         //std::cout<<old_loss_val<<std::endl;    
         pthread_mutex_lock(&mutex);
@@ -136,14 +134,12 @@ void LR::line_search(double *param_g){
         if(local_thread_id == main_thread_id){
             MPI_Allreduce(&global_old_loss_val, &all_nodes_old_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
         }
-
         pthread_barrier_wait(&barrier);
         for(int j = 0; j < feature_dim; j++){
             *(next_w + j) = *(w + j) + alpha * *(param_g + j);//local_g equal all nodes g
         }
         fix_dir(w, next_w);//orthant limited
         new_loss_val = loss_function_value(next_w);//cal new loss per thread
-
         pthread_mutex_lock(&mutex);
         global_new_loss_val += new_loss_val;//sum all threads loss value
         pthread_mutex_unlock(&mutex);
@@ -153,7 +149,6 @@ void LR::line_search(double *param_g){
                 MPI_Allreduce(&global_new_loss_val, &all_nodes_new_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//sum all nodes loss.
             }
         }
-
         pthread_barrier_wait(&barrier);
         loss_function_gradient(next_w, global_next_g);
 
@@ -161,13 +156,11 @@ void LR::line_search(double *param_g){
             break;
         }
         alpha *= backoff;
-        break;
     }
 }
 
 void LR::two_loop(int use_list_len, double *local_sub_g, double **s_list, double **y_list, double *ro_list, float *p){
     double *q = new double[feature_dim];//local variable
-    //double *alpha = new double[m]; 
     double* alpha = (double*)malloc(sizeof(double)*feature_dim);
     /*for(int i = 0; i < feature_dim; i++){
         //std::cout<<*(local_sub_g + i) << std::endl;
