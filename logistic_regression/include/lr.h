@@ -38,10 +38,10 @@ public:
     int m;
     int rank;
 //private:
-    void parallel_owlqn(int use_list_len, double* ro_list, double** s_list, double** y_list);
+    void parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list);
     void loss_function_gradient(double *para_w, double *para_g);
     void loss_function_subgradient(double *local_g, double *local_sub_g);
-    void two_loop(int use_list_len, double *sub_g, double **s_list, double **y_list, double *ro_list, float *p);
+    void two_loop(int step, int use_list_len, double *sub_g, double **s_list, double **y_list, double *ro_list, float *p);
     void line_search(double *local_g);
     double loss_function_value(double *w);
     double sigmoid(double x);

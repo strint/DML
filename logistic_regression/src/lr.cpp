@@ -159,7 +159,7 @@ void LR::line_search(double *param_g){
     }
 }
 
-void LR::two_loop(int use_list_len, double *local_sub_g, double **s_list, double **y_list, double *ro_list, float *p){
+void LR::two_loop(int step, int use_list_len, double *local_sub_g, double **s_list, double **y_list, double *ro_list, float *p){
     double *q = new double[feature_dim];//local variable
     double* alpha = (double*)malloc(sizeof(double)*feature_dim);
     /*for(int i = 0; i < feature_dim; i++){
@@ -173,28 +173,29 @@ void LR::two_loop(int use_list_len, double *local_sub_g, double **s_list, double
     }*/
     if(use_list_len < m) m = use_list_len; 
     for(int loop = 1; loop <= m; ++loop){
-        ro_list[loop - 1] = cblas_ddot(feature_dim, (double*)(&(*y_list)[loop - 1]), 1, (double*)(&(*s_list)[loop - 1]), 1);
-        alpha[loop] = cblas_ddot(feature_dim, (double*)(&(*s_list)[loop - 1]), 1, (double*)q, 1)/ro_list[loop - 1];
-        cblas_daxpy(feature_dim, -1 * alpha[loop], (double*)(&(*y_list)[loop - 1]), 1, (double*)q, 1);
+        ro_list[loop - 1] = cblas_ddot(feature_dim, &(*y_list)[loop - 1], 1, &(*s_list)[loop - 1], 1);
+        alpha[loop] = cblas_ddot(feature_dim, &(*s_list)[loop - 1], 1, (double*)q, 1)/ro_list[loop - 1];
+        cblas_daxpy(feature_dim, -1 * alpha[loop], &(*y_list)[loop - 1], 1, (double*)q, 1);
     }
-    delete [] q;
-    double *last_y = new double[feature_dim];
-    for(int j = 0; j < feature_dim; j++){
-        last_y[j] = *((*y_list + m - 1) + j);
+    if(step == 0){//the first step, p should be unit vector;
+        for(int j = 0; j < feature_dim; j++){
+            *(p + j) = 1.0;
+        }
     }
-    double ydoty = cblas_ddot(feature_dim, (double*)last_y, 1, (double*)last_y, 1);
-    float gamma = ro_list[m - 1]/ydoty;
-    cblas_sscal(feature_dim, gamma, p, 1);
+    else if(step != 0){  
+        double ydoty = cblas_ddot(feature_dim, s_list[step-1], 1, y_list[step-1], 1);
+        float gamma = ro_list[step - 1]/ydoty;
+        cblas_sscal(feature_dim, gamma, p, 1);
+    }
     for(int loop = m; loop >=1; --loop){
-        double beta = cblas_ddot(feature_dim, (double*)(&(*y_list)[m - loop]), 1, (double*)p, 1)/ro_list[m - loop];
-        cblas_daxpy(feature_dim, alpha[loop] - beta, (double*)(&(*s_list)[m - loop]), 1, (double*)p, 1);
+        double beta = cblas_ddot(feature_dim, &(*y_list)[m - loop], 1, (double*)p, 1)/ro_list[m - loop];
+        cblas_daxpy(feature_dim, alpha[loop] - beta, &(*s_list)[m - loop], 1, (double*)p, 1);
     }
     delete [] alpha;
-    delete [] last_y;
     //std::cout<<11111<<std::endl;
 }
 
-void LR::parallel_owlqn(int use_list_len, double* ro_list, double** s_list, double** y_list){
+void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list){
     //define and initial local parameters
     double *local_g = (double*)malloc(sizeof(double)*feature_dim);//single thread gradient
     double *local_sub_g = new double[feature_dim];//single thread subgradient
@@ -202,7 +203,7 @@ void LR::parallel_owlqn(int use_list_len, double* ro_list, double** s_list, doub
     loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
     loss_function_subgradient(local_g, local_sub_g); 
     //should add code update multithread and all nodes sub_g to global_sub_g
-    two_loop(use_list_len, local_sub_g, s_list, y_list, ro_list, p);
+    two_loop(step, use_list_len, local_sub_g, s_list, y_list, ro_list, p);
     pthread_mutex_lock(&mutex);
     for(int j = 0; j < feature_dim; j++){
         *(global_g + j) += *(p + j);//update global direction of all threads
@@ -254,7 +255,7 @@ void LR::owlqn(int proc_id, int n_procs){
     int use_list_len = 0;
     int step = 0;
     while(step < 3){
-        parallel_owlqn(use_list_len, ro_list, s_list, y_list);        
+        parallel_owlqn(step, use_list_len, ro_list, s_list, y_list);        
         step++;
     }
     pthread_barrier_wait(&barrier);
