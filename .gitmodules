@@ -1,0 +1,3 @@
+[submodule "logistic_regression/include/DVector"]
+	path = logistic_regression/include/DVector
+	url = https://github.com/strint/DVector.git
