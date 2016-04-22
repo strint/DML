@@ -1,3 +1,3 @@
 #!/bin/bash
 
-mpiexec -mca btl ^openib -np 1 ./train ./data/train.txt ./data/test_mini.txt
+mpiexec -mca btl ^openib -np 2 ./train ./data/train.txt ./data/test_mini.txt

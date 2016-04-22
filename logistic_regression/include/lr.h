@@ -25,7 +25,7 @@ public:
     float *w;//model paramter shared by all threads
     float *next_w;//model paramter after line search
     float *global_g;//gradient of loss function
-    float *global_next_g;//gradient of loss function when arrive new w
+    //float *global_next_g;//gradient of loss function when arrive new w
     float *all_nodes_global_g;
     float global_old_loss_val;//loss value of loss function
     float all_nodes_old_loss_val;

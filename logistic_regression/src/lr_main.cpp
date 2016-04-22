@@ -29,37 +29,39 @@ void *opt_algo(void *arg){
 
 
 int main(int argc,char* argv[]){
-    std::cout<<"cmd: ./train -trainfile -testfile"<<std::endl;
+    //start multi procress
     int myid, numprocs;
+
     MPI_Status status;
     MPI_Init(NULL,NULL);
     MPI_Comm_rank(MPI_COMM_WORLD,&myid);
     MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
 
-    //exec by main thread
     std::cout << "Num of process: " << numprocs << std::endl;
-    const char *train_data_file = argv[1];
-    char *test_data_file = argv[2];
-    std::string split_tag = " ";
+    std::cout << "I'm process: " << myid << std::endl;
 
+    char const *train_data_file = argv[1];
+    char const *test_data_file = argv[2];
+    std::string split_tag = " ";
     Load_Data train_data;
     train_data.fea_dim = 0;
-    train_data.load_data(train_data_file, split_tag);
+    train_data.load_data(train_data_file, split_tag); //暂时让每个节点加载完整的数据
 
-    int root = 0;
-    //MPI_Bcast(&ld.fea_dim, 1, MPI_INT, root, MPI_COMM_WORLD);
+    int master_rank = 0;
+    //MPI_Bcast(&ld.fea_dim, 1, MPI_INT, master_rank, MPI_COMM_WORLD);
     std::cout << "Trainning data dimension: " << train_data.fea_dim << std::endl;
     std::cout << "Trainning data num: " << train_data.get_data_num() << std::endl;
+
+    //multithread 
     std::vector<ThreadParam> params;
     std::vector<pthread_t> threads;
-    //CONFIG config;
     int n_threads = 2;
+    LR lr;
     LR::init_thread_var(n_threads);
     for(int i = 0; i < n_threads; i++){//construct parameter
         ThreadParam param = {n_threads, i, n_threads, i, &train_data};
         params.push_back(param);
     }
-    //multithread start
     for(int i = 0; i < params.size(); i++){
         pthread_t thread_id;
         int ret = pthread_create(&thread_id, NULL, &opt_algo, (void*)&(params[i]));
@@ -69,6 +71,7 @@ int main(int argc,char* argv[]){
     for(int i = 0; i < threads.size(); i++){//join threads function
         pthread_join(threads[i], 0);
     }
+
     LR::destroy_thread_var();
     MPI::Finalize();
     return 0;
