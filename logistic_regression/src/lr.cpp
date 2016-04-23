@@ -15,9 +15,7 @@ LR::LR(){
 LR::~LR(){
     delete [] w; 
     delete [] next_w;
-    delete [] global_g;
-    delete [] global_next_g;
-    delete [] all_nodes_global_g;
+    delete [] g;
 }
 
 void LR::init_theta(){
@@ -25,19 +23,18 @@ void LR::init_theta(){
     m = 10;
     w = new double[data.fea_dim];
     next_w = new double[data.fea_dim];
-    global_g = new double[data.fea_dim];
-    global_next_g = new double[data.fea_dim];
-    all_nodes_global_g = new double[data.fea_dim];
+    global_w = new double[data.fea_dim];
+    g = new double[data.fea_dim];
 
-    global_old_loss_val = 0.0;
-    global_new_loss_val = 0.0;
+    old_loss = 0.0;
+    new_loss = 0.0;
     
     double init_w = 0.0;
     for(int j = 0; j < data.fea_dim; j++){
         *(w + j) = init_w;
         *(next_w + j) = init_w;
-        *(global_g + j) = init_w;
-        *(global_next_g + j) = init_w; 
+        *(global_w + j) = init_w; 
+        *(g + j) = init_w;
     }
 }
 
@@ -60,7 +57,7 @@ double LR::loss_function_value(double *para_w){
     return f / data.fea_matrix.size();
 }
 
-void LR::loss_function_gradient(double *para_w, double *para_g){
+void LR::calculate_gradient(double *w, double *g){
     double f = 0.0;
     //std::cout<<data.fea_matrix.size()<<"----"<<std::endl;
     for(int i = 0; i < data.fea_matrix.size(); i++){
@@ -71,11 +68,11 @@ void LR::loss_function_gradient(double *para_w, double *para_g){
             value = data.fea_matrix[i][j].val;
             //std::cout<<"index="<<index<<std::endl;
             //std::cout<<"value="<<value<<std::endl;
-            wx += *(para_w + index) * value;
+            wx += *(w + index) * value;
         }
         for(int j = 0; j < data.fea_matrix[i].size(); j++){
             //std::cout<<data.label[i]<<std::endl;
-            *(para_g + j) += (sigmoid(wx) - data.label[i]) * value / (1.0 * data.fea_matrix.size());
+            *(g + j) += (sigmoid(wx) - data.label[i]) * value / (1.0 * data.fea_matrix.size());
         }
     }
     //for(int i = 0; i < data.fea_matrix[i].size(); i++){
@@ -83,24 +80,24 @@ void LR::loss_function_gradient(double *para_w, double *para_g){
     //}
 }
 
-void LR::loss_function_subgradient(double * local_g, double *local_sub_g){
+void LR::calculate_subgradient(double * g, double *sub_g){
     if(c == 0.0){
         for(int j = 0; j < data.fea_dim; j++){
-            *(local_sub_g + j) = -1 * *(local_g + j);
+            *(sub_g + j) = -1 * *(g + j);
         }
     }
     else if(c != 0.0){
         for(int j = 0; j < data.fea_dim; j++){
             if(*(w + j) > 0){
-                *(local_sub_g + j) = *(local_g + j) + c;
+                *(sub_g + j) = *(g + j) + c;
             }
             else if(*(w + j) < 0){
-                *(local_sub_g + j) = *(local_g + j) - c;
+                *(sub_g + j) = *(g + j) - c;
             }
             else {
-                if(*(local_g + j) - c > 0) *(local_sub_g + j) = *(local_g + j) - c;//左导数
-                else if(*(local_g + j) + c < 0) *(local_sub_g + j) = *(local_g + j) + c;
-                else *(local_sub_g + j) = 0;
+                if(*(g + j) - c > 0) *(sub_g + j) = *(g + j) - c;//左导数
+                else if(*(g + j) + c < 0) *(sub_g + j) = *(g + j) + c;
+                else *(sub_g + j) = 0;
             }
             //std::cout<<*(local_sub_g + j)<<std::endl;
             //std::cout<<c<<std::endl;
@@ -153,14 +150,17 @@ void LR::two_loop(int step, int use_list_len, double *local_sub_g, double **s_li
         std::cout<<*(p+i)<<std::endl;
     }*/
     //free(p);
-    cblas_dcopy(data.fea_dim, local_sub_g, 1, q, 1);
+    cblas_dcopy(data.fea_dim, sub_g, 1, q, 1);
     /*for(int i = 0; i < data.fea_dim; i++){
         std::cout<<*(q + i) << std::endl;
     }*/
     if(use_list_len < m) m = use_list_len; 
     for(int loop = 1; loop <= m; ++loop){
         ro_list[loop - 1] = cblas_ddot(data.fea_dim, &(*y_list)[loop - 1], 1, &(*s_list)[loop - 1], 1);
-        alpha[loop] = cblas_ddot(data.fea_dim, &(*s_list)[loop - 1], 1, (double*)q, 1)/ro_list[loop - 1];
+        alpha[loop] = cblas_ddot(data.fea_dim, &(*s_list)[loop - 1], 1, (double*)q, 1);
+	for(int i = 0; i < data.fea_dim; i++){
+            alpha[loop] /= ro_list[loop-1];
+        }
         cblas_daxpy(data.fea_dim, -1 * alpha[loop], &(*y_list)[loop - 1], 1, (double*)q, 1);
     }
     if(step == 0){//the first step, p should be unit vector;
@@ -181,15 +181,13 @@ void LR::two_loop(int step, int use_list_len, double *local_sub_g, double **s_li
     //std::cout<<11111<<std::endl;
 }
 
-void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list){
+void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list, int rank, int nproc){
     //define and initial local parameters
-    double *local_g = (double*)malloc(sizeof(double)*data.fea_dim);//single thread gradient
     double *local_sub_g = new double[data.fea_dim];//single thread subgradient
     float *p = new float[data.fea_dim];//single thread search direction.after two loop
-    loss_function_gradient(w, local_g);//calculate gradient of loss by global w)
-    loss_function_subgradient(local_g, local_sub_g); 
-    //should add code update multithread and all nodes sub_g to global_sub_g
-    two_loop(step, use_list_len, local_sub_g, s_list, y_list, ro_list, p);
+    calculate_gradient(w, g);//calculate gradient of loss by global w)
+    calculate_subgradient(g, sub_g); 
+    two_loop(step, use_list_len, sub_g, s_list, y_list, ro_list, p);
     for(int j = 0; j < data.fea_dim; j++){
         *(global_g + j) += *(p + j);//update global direction of all threads
     }
@@ -225,10 +223,10 @@ void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_
 void LR::owlqn(int rank, int n_proc){
     double *ro_list = new double[data.fea_dim];
     double** s_list = (double**)malloc(sizeof(double*)*m);
-    s_list[0] = new double[data.fea_dim];
     for(int i = 0; i < m; i++){
         s_list[i] = (double*)malloc(sizeof(double)*data.fea_dim); 
     }
+
     double** y_list = (double**)malloc(sizeof(double*)*m);
     for(int i = 0; i < m; i++){
         y_list[i] = (double*)malloc(sizeof(double)*data.fea_dim); 
@@ -236,10 +234,9 @@ void LR::owlqn(int rank, int n_proc){
     int use_list_len = 0;
     int step = 0;
     while(step < 3){
-        parallel_owlqn(step, use_list_len, ro_list, s_list, y_list);        
+        parallel_owlqn(step, use_list_len, ro_list, s_list, y_list, rank, nproc);        
         step++;
     }
-    //pthread_barrier_wait(&barrier);
     delete [] ro_list;
     for(int i = 0; i < m; i++){
         free(s_list[i]);
