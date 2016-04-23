@@ -17,11 +17,14 @@ public:
     LR();
     ~LR();
     //call by main thread
+    void run(int nproc, int rank);
+    double *global_w; 
+private:
     void init_theta();
     //call by threads 
     void owlqn(int proc_id, int n_procs);
     //shared by multithreads
-    double *w;//model paramter shared by all threads
+    double *w;
     double *next_w;//model paramter after line search
     double *global_g;//gradient of loss function
     double *global_next_g;//gradient of loss function when arrive new w
@@ -31,9 +34,7 @@ public:
     double global_new_loss_val;//loss value of loss function when arrive new w
     double all_nodes_new_loss_val;
     //void* data;
-    Load_Data* data;
-    pid_t main_thread_id;
-    int feature_dim;
+    //pid_t main_thread_id;
     double c;
     int m;
     int rank;
@@ -47,7 +48,7 @@ public:
     double sigmoid(double x);
     void fix_dir(double *w, double *next_w);
 
-    pthread_mutex_t mutex;
-    pthread_barrier_t barrier;
+    //pthread_mutex_t mutex;
+    //pthread_barrier_t barrier;
 };
 #endif
