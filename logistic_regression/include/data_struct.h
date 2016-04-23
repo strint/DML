@@ -2,7 +2,7 @@
 #define DATA_STRUCT_H_
 
 struct sparse_feature{
-    int idx;
+    long int idx;
     double val;
 };
 #endif
