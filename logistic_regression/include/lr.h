@@ -15,12 +15,13 @@
 class LR{
 
 public:
-    LR();
+    LR(Load_Data* data);
     ~LR();
     void run(int nproc, int rank);
     double *global_w; 
 
 private:
+    Load_Data* data;
     double *w;
     double *next_w;//model paramter after line search
     double *g;//gradient of loss function
