@@ -155,33 +155,26 @@ void LR::two_loop(int step, int use_list_len, double *local_sub_g, double **s_li
         std::cout<<*(q + i) << std::endl;
     }*/
     if(use_list_len < m) m = use_list_len; 
-    for(int loop = 1; loop <= m; ++loop){
-        ro_list[loop - 1] = cblas_ddot(data.fea_dim, &(*y_list)[loop - 1], 1, &(*s_list)[loop - 1], 1);
-        alpha[loop] = cblas_ddot(data.fea_dim, &(*s_list)[loop - 1], 1, (double*)q, 1);
-	for(int i = 0; i < data.fea_dim; i++){
-            alpha[loop] /= ro_list[loop-1];
-        }
-        cblas_daxpy(data.fea_dim, -1 * alpha[loop], &(*y_list)[loop - 1], 1, (double*)q, 1);
+    for(int loop = m-1; loop >= 0; --loop){
+        ro_list[loop] = cblas_ddot(data.fea_dim, &(*y_list)[loop], 1, &(*s_list)[loop], 1);
+        alpha[loop] = cblas_ddot(data.fea_dim, &(*s_list)[loop], 1, (double*)q, 1) / ro_list[loop];
+        cblas_daxpy(data.fea_dim, -1 * alpha[loop], &(*y_list)[loop], 1, (double*)q, 1);
     }
-    if(step == 0){//the first step, p should be unit vector;
-        for(int j = 0; j < data.fea_dim; j++){
-            *(p + j) = 1.0;
-        }
-    }
-    else if(step != 0){  
-        double ydoty = cblas_ddot(data.fea_dim, s_list[step-1], 1, y_list[step-1], 1);
-        float gamma = ro_list[step - 1]/ydoty;
-        cblas_sscal(data.fea_dim, gamma, p, 1);
-    }
-    for(int loop = m; loop >=1; --loop){
-        double beta = cblas_ddot(data.fea_dim, &(*y_list)[m - loop], 1, (double*)p, 1)/ro_list[m - loop];
-        cblas_daxpy(data.fea_dim, alpha[loop] - beta, &(*s_list)[m - loop], 1, (double*)p, 1);
+
+    double ydoty = cblas_ddot(data.fea_dim, s_list[step%m - 1], 1, y_list[step%m - 1], 1);
+    float gamma = ro_list[step%m - 1]/ydoty;
+    cblas_sscal(data.fea_dim, gamma, p, 1);
+    
+    for(int loop = 0; loop < m; ++loop){
+        double beta = cblas_ddot(data.fea_dim, &(*y_list)[loop], 1, (double*)p, 1)/ro_list[loop];
+        cblas_daxpy(data.fea_dim, alpha[loop] - beta, &(*s_list)[loop], 1, (double*)p, 1);
     }
     delete [] alpha;
     //std::cout<<11111<<std::endl;
 }
 
 void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list, int rank, int nproc){
+    MPI_Status status;
     //define and initial local parameters
     double *local_sub_g = new double[data.fea_dim];//single thread subgradient
     float *p = new float[data.fea_dim];//single thread search direction.after two loop
@@ -189,19 +182,22 @@ void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_
     calculate_subgradient(g, sub_g); 
     two_loop(step, use_list_len, sub_g, s_list, y_list, ro_list, p);
     for(int j = 0; j < data.fea_dim; j++){
-        *(global_g + j) += *(p + j);//update global direction of all threads
+        *(g + j) += *(p + j);//update global direction of all threads
     }
     //if(lr.rank == 0){
     if(rank != 0){
-            MPI_Send(global_g, data.fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD); 
+        MPI_Send(g, data.fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD); 
     }
     else if(rank == 0){
-            MPI_Status status;
-            double* tmp_global_g = new double[data.fea_dim];
-            MPI_Recv(tmp_global_g, data.fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
-           for(int j = 0; j < data.fea_dim; j++){
-               *(all_nodes_global_g + j) += *(tmp_global_g + j);
-           }
+        for(int j = 0; j < data.fea_dim; j++){
+               *(global_g + j) += *(g + j);
+        }
+        MPI_Recv(g, data.fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
+	for(int i = 1; i < nproc; i++){
+            for(int j = 0; j < data.fea_dim; j++){
+               *(global_g + j) += *(g + j);
+            }
+        }
     }
     line_search(all_nodes_global_g);//use global search direction to search
     //update slist
