@@ -24,10 +24,12 @@ private:
     double *w;
     double *next_w;//model paramter after line search
     double *g;//gradient of loss function
+    double *next_g;
     double old_loss;//loss value of loss function
     double new_loss;//loss value of loss function when arrive new w
     double c;
     int m;
+    double lambda;
 
     void init_theta();
     void owlqn(int proc_id, int n_procs);

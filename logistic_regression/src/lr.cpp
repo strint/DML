@@ -21,6 +21,8 @@ LR::~LR(){
 void LR::init_theta(){
     c = 1.0;
     m = 10;
+    lambda = 1.0;
+
     w = new double[data.fea_dim];
     next_w = new double[data.fea_dim];
     global_w = new double[data.fea_dim];
@@ -112,33 +114,22 @@ void LR::fix_dir(double *w, double *next_w){
     }
 }
 
-void LR::line_search(double *param_g){
-    double alpha = 1.0;
-    double beta = 1e-4;
+void LR::line_search(double *global_g){
     double backoff = 0.5;
-    double old_loss_val = 0.0, new_loss_val = 0.0;
     while(true){
-        old_loss_val = loss_function_value(w);//cal loss value per thread
-        //std::cout<<old_loss_val<<std::endl;    
-        global_old_loss_val += old_loss_val;//add old loss value of all threads
+        old_loss = loss_function_value(w);//cal loss value per thread
         //std::cout<<global_old_loss_val<<std::endl;
-        MPI_Allreduce(&global_old_loss_val, &all_nodes_old_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
         for(int j = 0; j < data.fea_dim; j++){
-            *(next_w + j) = *(w + j) + alpha * *(param_g + j);//local_g equal all nodes g
+            *(next_w + j) = *(w + j) + lambda * *(global_g + j);//local_g equal all nodes g
         }
         fix_dir(w, next_w);//orthant limited
-        new_loss_val = loss_function_value(next_w);//cal new loss per thread
-        global_new_loss_val += new_loss_val;//sum all threads loss value
-        //if(lr.rank != 0){
-        if(rank != 0){
-            MPI_Allreduce(&global_new_loss_val, &all_nodes_new_loss_val, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);//sum all nodes loss.
-        }
-        loss_function_gradient(next_w, global_next_g);
+        new_loss = loss_function_value(next_w);//cal new loss per thread
+        caculate_gradient(next_w, next_g);
 
-        if(all_nodes_new_loss_val <= all_nodes_old_loss_val + beta * cblas_ddot(data.fea_dim, (double*)param_g, 1, (double*)global_next_g, 1)){
+        if(new_loss <= old_loss + lambda * cblas_ddot(data.fea_dim, (double*)global_g, 1, (double*)next_g, 1)){
             break;
         }
-        alpha *= backoff;
+        lambda *= backoff;
     }
 }
 
@@ -170,7 +161,6 @@ void LR::two_loop(int step, int use_list_len, double *local_sub_g, double **s_li
         cblas_daxpy(data.fea_dim, alpha[loop] - beta, &(*s_list)[loop], 1, (double*)p, 1);
     }
     delete [] alpha;
-    //std::cout<<11111<<std::endl;
 }
 
 void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list, int rank, int nproc){
@@ -184,7 +174,6 @@ void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_
     for(int j = 0; j < data.fea_dim; j++){
         *(g + j) += *(p + j);//update global direction of all threads
     }
-    //if(lr.rank == 0){
     if(rank != 0){
         MPI_Send(g, data.fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD); 
     }
@@ -198,8 +187,8 @@ void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_
                *(global_g + j) += *(g + j);
             }
         }
+	line_search(global_g);
     }
-    line_search(all_nodes_global_g);//use global search direction to search
     //update slist
     cblas_daxpy(data.fea_dim, -1, (double*)w, 1, (double*)next_w, 1);
     cblas_dcopy(data.fea_dim, (double*)next_w, 1, (double*)s_list[(m - use_list_len) % m], 1);
