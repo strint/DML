@@ -8,15 +8,23 @@ extern "C"{
 }
 
 LR::LR(Load_Data* ld) : data(ld){
+    init();
 }
 
 LR::~LR(){
+    delete [] ro_list;
+    for(int i = 0; i < m; i++){
+        free(s_list[i]);
+        free(y_list[i]);
+    }
+    free(s_list);
+    free(y_list);
     delete [] w; 
     delete [] next_w;
     delete [] g;
 }
 
-void LR::init_theta(){
+void LR::init(){
     c = 1.0;
     m = 10;
     lambda = 1.0;
@@ -28,7 +36,20 @@ void LR::init_theta(){
 
     old_loss = 0.0;
     new_loss = 0.0;
-    
+    q = new double[data->fea_dim];//local variable
+    alpha = (double*)malloc(sizeof(double)*data->fea_dim);
+
+    ro_list = new double[data->fea_dim];
+    s_list = (double**)malloc(sizeof(double*)*m);
+    for(int i = 0; i < m; i++){
+        s_list[i] = (double*)malloc(sizeof(double)*data->fea_dim);
+    }
+
+    y_list = (double**)malloc(sizeof(double*)*m);
+    for(int i = 0; i < m; i++){
+        y_list[i] = (double*)malloc(sizeof(double)*data->fea_dim);
+    }
+ 
     double init_w = 0.0;
     for(int j = 0; j < data->fea_dim; j++){
         *(w + j) = init_w;
@@ -112,37 +133,35 @@ void LR::fix_dir(double *w, double *next_w){
     }
 }
 
-void LR::line_search(double *global_g){
+void LR::line_search(){
     double backoff = 0.5;
     while(true){
-        old_loss = loss_function_value(w);//cal loss value per thread
-        //std::cout<<global_old_loss_val<<std::endl;
+        if(rank != 0){
+ 	    //send old_loss
+        }
+	else{
+           // 
+	}
         for(int j = 0; j < data->fea_dim; j++){
             *(next_w + j) = *(w + j) + lambda * *(global_g + j);//local_g equal all nodes g
         }
-        fix_dir(w, next_w);//orthant limited
-        new_loss = loss_function_value(next_w);//cal new loss per thread
-        caculate_gradient(next_w, next_g);
+        new_loss = calculate_loss(next_w);//cal new loss per thread
+        if(rank != 0){
+            //send old_loss
+        }
+        else{
+           //
+        }
 
-        if(new_loss <= old_loss + lambda * cblas_ddot(data->fea_dim, (double*)global_g, 1, (double*)next_g, 1)){
+        if(new_loss <= loss + lambda * cblas_ddot(data->fea_dim, (double*)sub_g, 1, (double*)global_g, 1)){
             break;
         }
         lambda *= backoff;
     }
 }
 
-void LR::two_loop(int step, int use_list_len, double *local_sub_g, double **s_list, double **y_list, double *ro_list, float *p){
-    double *q = new double[data->fea_dim];//local variable
-    double* alpha = (double*)malloc(sizeof(double)*data->fea_dim);
-    /*for(int i = 0; i < data->fea_dim; i++){
-        //std::cout<<*(local_sub_g + i) << std::endl;
-        std::cout<<*(p+i)<<std::endl;
-    }*/
-    //free(p);
+void LR::two_loop(){
     cblas_dcopy(data->fea_dim, sub_g, 1, q, 1);
-    /*for(int i = 0; i < data->fea_dim; i++){
-        std::cout<<*(q + i) << std::endl;
-    }*/
     if(use_list_len < m) m = use_list_len; 
     for(int loop = m-1; loop >= 0; --loop){
         ro_list[loop] = cblas_ddot(data->fea_dim, &(*y_list)[loop], 1, &(*s_list)[loop], 1);
@@ -161,72 +180,48 @@ void LR::two_loop(int step, int use_list_len, double *local_sub_g, double **s_li
     delete [] alpha;
 }
 
-void LR::parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list, int rank, int nproc){
-    MPI_Status status;
-    //define and initial local parameters
-    double *local_sub_g = new double[data->fea_dim];//single thread subgradient
-    float *p = new float[data->fea_dim];//single thread search direction.after two loop
-    calculate_gradient(w, g);//calculate gradient of loss by global w)
-    calculate_subgradient(g, sub_g); 
-    two_loop(step, use_list_len, sub_g, s_list, y_list, ro_list, p);
-    for(int j = 0; j < data->fea_dim; j++){
-        *(g + j) += *(p + j);//update global direction of all threads
-    }
-    if(rank != 0){
-        MPI_Send(g, data->fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD); 
-    }
-    else if(rank == 0){
-        for(int j = 0; j < data->fea_dim; j++){
-               *(global_g + j) += *(g + j);
-        }
-        MPI_Recv(g, data->fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
-	for(int i = 1; i < nproc; i++){
-            for(int j = 0; j < data->fea_dim; j++){
-               *(global_g + j) += *(g + j);
-            }
-        }
-	line_search(global_g);
-    }
-    //update slist
-    cblas_daxpy(data->fea_dim, -1, (double*)w, 1, (double*)next_w, 1);
-    cblas_dcopy(data->fea_dim, (double*)next_w, 1, (double*)s_list[(m - use_list_len) % m], 1);
-    //update ylist
-    cblas_daxpy(data->fea_dim, -1, (double*)global_g, 1, (double*)global_next_g, 1); 
-    cblas_dcopy(data->fea_dim, (double*)global_next_g, 1, (double*)y_list[(m - use_list_len) % m], 1);
-    use_list_len++;
-    if(use_list_len > m){
-	for(int j = 0; j < data->fea_dim; j++){
-	     *(*(s_list + abs(m - use_list_len) % m) + j) = 0.0;
-             *(*(y_list + abs(m - use_list_len) % m) + j) = 0.0;        
-        }
-    }
-    cblas_dcopy(data->fea_dim, (double*)next_w, 1, (double*)w, 1);
-}
-
 void LR::owlqn(int rank, int n_proc){
-    double *ro_list = new double[data->fea_dim];
-    double** s_list = (double**)malloc(sizeof(double*)*m);
-    for(int i = 0; i < m; i++){
-        s_list[i] = (double*)malloc(sizeof(double)*data->fea_dim); 
-    }
-
-    double** y_list = (double**)malloc(sizeof(double*)*m);
-    for(int i = 0; i < m; i++){
-        y_list[i] = (double*)malloc(sizeof(double)*data->fea_dim); 
-    }
+    MPI_Status status;
     int use_list_len = 0;
     int step = 0;
     while(step < 3){
-        parallel_owlqn(step, use_list_len, ro_list, s_list, y_list, rank, nproc);        
-        step++;
-    }
-    delete [] ro_list;
-    for(int i = 0; i < m; i++){
-        free(s_list[i]);
-        free(y_list[i]);
-    }
-    free(s_list);
-    free(y_list);
+	//define and initial local parameters
+	calculate_gradient();//calculate gradient of loss by global w)
+	calculate_subgradient();
+	two_loop();
+	if(rank != 0){
+	    MPI_Send(q, data->fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
+	}
+	else if(rank == 0){
+	    for(int j = 0; j < data->fea_dim; j++){
+	        *(global_g + j) += *(q + j);
+	    }
+            for(int i = 1; i < nproc; i++){
+                MPI_Recv(q, data->fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
+	        for(int j = 0; j < data->fea_dim; j++){
+                    *(global_g + j) += *(q + j);
+	        }
+            }
+            loss = calculate_loss(w);
+	    line_search();
+            fix_dir(w, next_w);//orthant limited
+	}
+	//update slist
+	cblas_daxpy(data->fea_dim, -1, (double*)w, 1, (double*)next_w, 1);
+	cblas_dcopy(data->fea_dim, (double*)next_w, 1, (double*)s_list[(m - use_list_len) % m], 1);
+	//update ylist
+	cblas_daxpy(data->fea_dim, -1, (double*)global_g, 1, (double*)global_next_g, 1);
+	cblas_dcopy(data->fea_dim, (double*)global_next_g, 1, (double*)y_list[(m - use_list_len) % m], 1);
+	use_list_len++;
+        if(use_list_len > m){
+            for(int j = 0; j < data->fea_dim; j++){
+                 *(*(s_list + abs(m - use_list_len) % m) + j) = 0.0;
+                 *(*(y_list + abs(m - use_list_len) % m) + j) = 0.0;
+            }
+        }
+        cblas_dcopy(data->fea_dim, (double*)next_w, 1, (double*)w, 1);
+            step++;
+        }
 }
 
 void LR::run(int rank, int nproc){

@@ -25,22 +25,31 @@ private:
     double *w;
     double *next_w;//model paramter after line search
     double *g;//gradient of loss function
-    double *next_g;
+    double *sub_g;
+    //double *next_g;
     double old_loss;//loss value of loss function
     double new_loss;//loss value of loss function when arrive new w
     double c;
     int m;
     double lambda;
+    
+    double** s_list;
+    double** y_list;
+    double *alpha;
+    double *ro_list；
+    double* q;
+    
+    double loss;
+    double new_loss;
 
     void init_theta();
-    void owlqn(int proc_id, int n_procs);
-    void parallel_owlqn(int step, int use_list_len, double* ro_list, double** s_list, double** y_list, int rank, int nproc);
-    void calculate_gradient(double *w, double *g);
-    void calculate_subgradient(double *g, double *sub_g);
-    void two_loop(int step, int use_list_len, double *sub_g, double **s_list, double **y_list, double *ro_list, float *p);
-    void line_search(double *local_g);
-    double loss_function_value(double *w);
+    void owlqn(int rank, int n_proc);
+    void calculate_gradient();
+    void calculate_subgradient();
+    void two_loop();
+    void line_search();
+    double calculate_loss(double *w);
     double sigmoid(double x);
-    void fix_dir(double *w, double *next_w);
+    void fix_dir();
 };
 #endif
