@@ -136,23 +136,10 @@ void LR::fix_dir(double *w, double *next_w){
 void LR::line_search(){
     double backoff = 0.5;
     while(true){
-        if(rank != 0){
- 	    //send old_loss
-        }
-	else{
-           // 
-	}
         for(int j = 0; j < data->fea_dim; j++){
             *(next_w + j) = *(w + j) + lambda * *(global_g + j);//local_g equal all nodes g
         }
         new_loss = calculate_loss(next_w);//cal new loss per thread
-        if(rank != 0){
-            //send old_loss
-        }
-        else{
-           //
-        }
-
         if(new_loss <= loss + lambda * cblas_ddot(data->fea_dim, (double*)sub_g, 1, (double*)global_g, 1)){
             break;
         }
