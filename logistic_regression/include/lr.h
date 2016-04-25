@@ -10,47 +10,47 @@
 #include <string.h>
 #include <deque>
 #include <pthread.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include "load_data.h"
 
 class LR{
+
 public:
-    LR();
+    LR(Load_Data* data);
     ~LR();
-    //call by main thread
-    void init_theta();
-    //call by threads
-    void owlqn(int proc_id, int n_procs);
-    //shared by multithreads
-    float *w;//model paramter shared by all threads
-    float *next_w;//model paramter after line search
-    float *global_g;//gradient of loss function
-    //float *global_next_g;//gradient of loss function when arrive new w
-    float *all_nodes_global_g;
-    float global_old_loss_val;//loss value of loss function
-    float all_nodes_old_loss_val;
-    float global_new_loss_val;//loss value of loss function when arrive new w
-    float all_nodes_new_loss_val;
-    pid_t main_thread_id;
-    float c;
-    int m;
-    int threads_num;
-    int thread_rank;
-    Load_Data *train_data; //global trainning data
-    static void init_thread_var(int threads_num);
-    static void destroy_thread_var();
+    void run(int nproc, int rank);
+    double *global_w; 
 
 private:
-    void parallel_owlqn(int use_list_len, float* ro_list, float** s_list, float** y_list);
-    void loss_function_gradient(float *para_w, float *para_g);
-    void loss_function_subgradient(float *local_g, float *local_sub_g);
-    void two_loop(int use_list_len, float *sub_g, float **s_list, float **y_list, float *ro_list, float *p);
-    void line_search(float *local_g);
-    float loss_function_value(float *w);
-    float sigmoid(float x);
-    void fix_dir(float *w, float *next_w);
+    Load_Data* data;
+    double *w;
+    double *next_w;//model paramter after line search
+    double *g;//gradient of loss function
+    double *sub_g;
+    //double *next_g;
+    double old_loss;//loss value of loss function
+    double new_loss;//loss value of loss function when arrive new w
+    double c;
+    int m;
+    double lambda;
+    
+    double** s_list;
+    double** y_list;
+    double *alpha;
+    double *ro_list；
+    double* q;
+    
+    double loss;
+    double new_loss;
 
-    static pthread_mutex_t mutex;
-    static pthread_barrier_t barrier;
+    void init_theta();
+    void owlqn(int rank, int n_proc);
+    void calculate_gradient();
+    void calculate_subgradient();
+    void two_loop();
+    void line_search();
+    double calculate_loss(double *w);
+    double sigmoid(double x);
+    void fix_dir();
 };
 #endif

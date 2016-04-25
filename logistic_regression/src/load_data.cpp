@@ -45,7 +45,8 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
     }
 }
 
-void Load_Data::load_data(const char* data_file, std::string split_tag){
+void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
+    MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
     if(!fin) std::cerr<<"open error get feature number..."<<data_file<<std::endl;
     int y = 0;
@@ -60,6 +61,17 @@ void Load_Data::load_data(const char* data_file, std::string split_tag){
         fea_matrix.push_back(key_val);
     }
     fin.close();
+
+    if(rank != MASTER_ID){
+        MPI_Send(&fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD);
+    }
+    else{
+	if(fea_dim > g_feature_dim) g_feature_dim = fea_dim;
+	for(int i = 1; i < nproc; i++){
+	    MPI_Recv(&fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
+	    if(fea_dim > g_feature_dim) g_feature_dim = fea_dim;
+	}
+    }
 }
 
 int Load_Data::get_data_num() {

@@ -2,17 +2,18 @@
 LIB = -L/opt/OpenBLAS/lib
 INCLUDE = -I/opt/OpenBLAS/include 
 #train code
+CPP_tag = -std=gnu++11
 train:lr_main.o lr.o load_data.o 
-	mpicxx -g -o train lr_main.o lr.o load_data.o $(LIB)  -lopenblas -lpthread
+	mpicxx $(CPP_tag) -o train lr_main.o lr.o load_data.o $(LIB)  -lopenblas -lpthread
 
 lr_main.o: src/lr_main.cpp 
-	mpicxx $(INCLUDE) -g -I ./include -c src/lr_main.cpp
+	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/lr_main.cpp
 
 load_data.o: src/load_data.cpp
-	mpicxx $(INCLUDE) -g -I ./include -c src/load_data.cpp
+	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/load_data.cpp
 
 lr.o: src/lr.cpp  
-	mpicxx $(INCLUDE) -g -I ./include -c src/lr.cpp
+	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/lr.cpp
 
 #predict code
 predict: predict.o
