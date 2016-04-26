@@ -1,7 +1,7 @@
 
 
 CPPFLAGS = -O2
-INCLUDES = -I/home/services/xiaoshu/ml/hpc/include -I./include
+INCLUDES = -I/usr/include/mpi/include -I./include
 
 .PHONY:all
 all: mpi_eval

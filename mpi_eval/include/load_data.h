@@ -7,7 +7,7 @@
 #include <vector>
 #include <string.h>
 
-#define CTRL_A ""
+#define CTRL_A "	"
 #define CTRL_B ""
 
 #define MASTER_ID (0)
