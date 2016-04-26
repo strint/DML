@@ -32,23 +32,25 @@ void LR::init(){
     w = new double[data->fea_dim];
     next_w = new double[data->fea_dim];
     global_w = new double[data->fea_dim];
+
     g = new double[data->fea_dim];
-
-    old_loss = 0.0;
-    new_loss = 0.0;
+    sub_g = new double[data->fea_dim];
     q = new double[data->fea_dim];//local variable
-    alpha = (double*)malloc(sizeof(double)*data->fea_dim);
 
-    ro_list = new double[data->fea_dim];
+    loss = 0.0;
+    new_loss = 0.0;
+
     s_list = (double**)malloc(sizeof(double*)*m);
     for(int i = 0; i < m; i++){
         s_list[i] = (double*)malloc(sizeof(double)*data->fea_dim);
     }
-
     y_list = (double**)malloc(sizeof(double*)*m);
     for(int i = 0; i < m; i++){
         y_list[i] = (double*)malloc(sizeof(double)*data->fea_dim);
     }
+    alpha = (double*)malloc(sizeof(double)*data->fea_dim);
+    ro_list = new double[data->fea_dim];
+
  
     double init_w = 0.0;
     for(int j = 0; j < data->fea_dim; j++){
@@ -63,7 +65,7 @@ double LR::sigmoid(double x){
     return 1/(1+exp(-x));
 }
 
-double LR::loss_function_value(double *para_w){
+double LR::calculate_loss(double *para_w){
     double f = 0.0;
     for(int i = 0; i < data->fea_matrix.size(); i++){
         double wx = 0.0;
@@ -78,7 +80,7 @@ double LR::loss_function_value(double *para_w){
     return f / data->fea_matrix.size();
 }
 
-void LR::calculate_gradient(double *w, double *g){
+void LR::calculate_gradient(){
     double f = 0.0;
     //std::cout<<data->fea_matrix.size()<<"----"<<std::endl;
     for(int i = 0; i < data->fea_matrix.size(); i++){
@@ -101,7 +103,7 @@ void LR::calculate_gradient(double *w, double *g){
     //}
 }
 
-void LR::calculate_subgradient(double * g, double *sub_g){
+void LR::calculate_subgradient(){
     if(c == 0.0){
         for(int j = 0; j < data->fea_dim; j++){
             *(sub_g + j) = -1 * *(g + j);
@@ -126,7 +128,7 @@ void LR::calculate_subgradient(double * g, double *sub_g){
     }
 }
 
-void LR::fix_dir(double *w, double *next_w){
+void LR::fix_dir(){
     for(int j = 0; j < data->fea_dim; j++){
         if(*(next_w + j) * *(w + j) >=0) *(next_w + j) = 0.0;
         else *(next_w + j) = *(next_w + j);
@@ -191,7 +193,7 @@ void LR::owlqn(int rank, int n_proc){
             }
             loss = calculate_loss(w);
 	    line_search();
-            fix_dir(w, next_w);//orthant limited
+            fix_dir();//orthant limited
 	}
 	//update slist
 	cblas_daxpy(data->fea_dim, -1, (double*)w, 1, (double*)next_w, 1);
