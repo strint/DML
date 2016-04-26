@@ -18,31 +18,33 @@ public:
     LR(Load_Data* data);
     ~LR();
     void run(int nproc, int rank);
-    double *global_w; 
 
 private:
     Load_Data* data;
-    double *w;
-    double *next_w;//model paramter after line search
-    double *g;//gradient of loss function
-    double *sub_g;
-    //double *next_g;
-    double old_loss;//loss value of loss function
-    double new_loss;//loss value of loss function when arrive new w
+
     double c;
     int m;
     double lambda;
-    
-    double** s_list;
-    double** y_list;
-    double *alpha;
-    double *ro_list；
-    double* q;
-    
+
+    double *w;
+    double *next_w;//model paramter after line search
+    double *global_w; 
+
+    double *g;//gradient of loss function
+    double *sub_g;
+    //double *next_g;
+    double *q;
+
     double loss;
     double new_loss;
 
-    void init_theta();
+    double **s_list;
+    double **y_list;
+    double *alpha;
+    double *ro_list;
+    
+
+    void init();
     void owlqn(int rank, int n_proc);
     void calculate_gradient();
     void calculate_subgradient();
@@ -52,4 +54,5 @@ private:
     double sigmoid(double x);
     void fix_dir();
 };
-#endif
+#endif // LR_H_
+
