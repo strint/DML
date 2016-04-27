@@ -20,29 +20,44 @@ public:
     void run(int nproc, int rank);
 
 private:
+    //training data
     Load_Data* data;
 
-    double c;
-    int m;
-    double lambda;
+    //l1 norm parameter
+    double c; //l1 norm parameter
 
-    double *w;
-    double *next_w;//model paramter after line search
-    double *global_w; 
+    //parameter
+    double* loc_w; //local model parameter
+    double* glo_w; //global model parameter
+    double* glo_new_w; //model paramter after line search
 
-    double *g;//gradient of loss function
-    double *sub_g;
+    //gradient
+    double* loc_g; //gradient of loss function compute by data on this process
+    double* glo_g; //gradient of loss function compute by data on all process
+
+    //sub gradient
+    double* glo_sub_g; //global sub gradient
     //double *next_g;
-    double *q;
 
-    double loss;
-    double new_loss;
+    //search direction
+    double* glo_q; //global search direction
 
-    double **s_list;
-    double **y_list;
-    double *alpha;
-    double *ro_list;
+    //loss
+    double loc_loss; //local loss
+    double glo_loss; //global loss
+    double loc_new_loss; //new local loss
+    double glo_new_loss; //new global loss
+
+    //two loop
+    int m; //memory number in owlqn(lbfgs)
+    double** glo_s_list; //global s list in lbfgs two loop
+    double** glo_y_list; //global y list in lbfgs two loop
+    double* glo_alpha_list; //global alpha list in lbfgs two loop
+    double* glo_ro_list; //global ro list in lbfgs two loop
     
+    //line search
+    double lambda; //learn rate in line search
+    double beta; //back rate in line search
 
     void init();
     void owlqn(int rank, int n_proc);
