@@ -1,4 +1,4 @@
-#include "lr.h"
+#include "owlqn.h"
 #include "mpi.h"
 #include <string.h>
 #include "gtest/gtest.h"

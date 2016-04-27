@@ -1,7 +1,7 @@
 #include "mpi.h"
 #include <iostream>
 #include <vector>
-#include "lr.h"
+#include "owlqn.h"
 
 extern "C"{
 #include <cblas.h>
