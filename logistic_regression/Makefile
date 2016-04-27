@@ -12,7 +12,7 @@ lr_main.o: src/lr_main.cpp
 load_data.o: src/load_data.cpp
 	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/load_data.cpp
 
-lr.o: src/owlqn.cpp  
+owlqn.o: src/owlqn.cpp  
 	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/owlqn.cpp
 
 #predict code
