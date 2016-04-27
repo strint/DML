@@ -27,7 +27,6 @@ private:
     double c; //l1 norm parameter
 
     //parameter
-    double* loc_w; //local model parameter
     double* glo_w; //global model parameter
     double* glo_new_w; //model paramter after line search
 
@@ -42,12 +41,6 @@ private:
     //search direction
     double* glo_q; //global search direction
 
-    //loss
-    double loc_loss; //local loss
-    double glo_loss; //global loss
-    double loc_new_loss; //new local loss
-    double glo_new_loss; //new global loss
-
     //two loop
     int m; //memory number in owlqn(lbfgs)
     double** glo_s_list; //global s list in lbfgs two loop
@@ -55,6 +48,12 @@ private:
     double* glo_alpha_list; //global alpha list in lbfgs two loop
     double* glo_ro_list; //global ro list in lbfgs two loop
     
+    //loss
+    double loc_loss; //local loss
+    double glo_loss; //global loss
+    double loc_new_loss; //new local loss
+    double glo_new_loss; //new global loss
+
     //line search
     double lambda; //learn rate in line search
     double beta; //back rate in line search
