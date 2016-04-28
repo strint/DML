@@ -7,58 +7,72 @@ extern "C"{
 #include <cblas.h>
 }
 
-LR::LR(Load_Data* ld) : data(ld){
+LR::LR(Load_Data* ld, int total_num_proc, int my_rank) 
+       : data(ld), num_proc(total_num_proc), rank(my_rank) {
     init();
 }
 
 LR::~LR(){
-    delete [] ro_list;
+    delete[] glo_w; 
+    delete[] glo_new_w;
+
+    delete[] loc_g;
+    delete[] glo_g;
+    delete[] loc_new_g;
+    delete[] glo_new_g;
+
+    delete[] glo_sub_g;
+
+    delete[] glo_q;
+
     for(int i = 0; i < m; i++){
-        free(s_list[i]);
-        free(y_list[i]);
+        delete[] glo_s_list[i];
+        delete[] glo_y_list[i];
     }
-    free(s_list);
-    free(y_list);
-    delete [] w; 
-    delete [] next_w;
-    delete [] g;
+    delete[] glo_s_list;
+    delete[] glo_y_list;
+
+    delete[] glo_alpha_list;
+    delete[] glo_ro_list;
 }
 
 void LR::init(){
     c = 1.0;
+
+    glo_w = new double[data->fea_dim]();
+    glo_new_w = new double[data->fea_dim]();
+
+    loc_g = new double[data->fea_dim]();
+    glo_g = new double[data->fea_dim]();
+    loc_new_g = new double[data->fea_dim]();
+    glo_new_g = new double[data->fea_dim]();
+
+    glo_sub_g = new double[data->fea_dim]();
+
+    glo_q = new double[data->fea_dim]();
+
     m = 10;
+    now_m = 0;
+    glo_s_list = new double*[m];
+    for(int i = 0; i < m; i++){
+        glo_s_list[i] = new double[data->fea_dim]();
+    }
+    glo_y_list = new double*[m];
+    for(int i = 0; i < m; i++){
+        glo_y_list[i] = new double[data->fea_dim]();
+    }
+    glo_alpha_list = new double[data->fea_dim]();
+    glo_ro_list = new double[data->fea_dim](); 
+
+    loc_loss = 0.0;
+    glo_loss = 0.0;
+    loc_new_loss = 0.0;
+    glo_new_loss = 0.0;
+
     lambda = 1.0;
+    backoff = 0.5;
 
-    w = new double[data->fea_dim];
-    next_w = new double[data->fea_dim];
-    global_w = new double[data->fea_dim];
-
-    g = new double[data->fea_dim];
-    sub_g = new double[data->fea_dim];
-    q = new double[data->fea_dim];//local variable
-
-    loss = 0.0;
-    new_loss = 0.0;
-
-    s_list = (double**)malloc(sizeof(double*)*m);
-    for(int i = 0; i < m; i++){
-        s_list[i] = (double*)malloc(sizeof(double)*data->fea_dim);
-    }
-    y_list = (double**)malloc(sizeof(double*)*m);
-    for(int i = 0; i < m; i++){
-        y_list[i] = (double*)malloc(sizeof(double)*data->fea_dim);
-    }
-    alpha = (double*)malloc(sizeof(double)*data->fea_dim);
-    ro_list = new double[data->fea_dim];
-
- 
-    double init_w = 0.0;
-    for(int j = 0; j < data->fea_dim; j++){
-        *(w + j) = init_w;
-        *(next_w + j) = init_w;
-        *(global_w + j) = init_w; 
-        *(g + j) = init_w;
-    }
+    step = 0;
 }
 
 double LR::sigmoid(double x){
@@ -91,11 +105,11 @@ void LR::calculate_gradient(){
             value = data->fea_matrix[i][j].val;
             //std::cout<<"index="<<index<<std::endl;
             //std::cout<<"value="<<value<<std::endl;
-            wx += *(w + index) * value;
+            wx += *(glo_w + index) * value;
         }
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
             //std::cout<<data->label[i]<<std::endl;
-            *(g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
+            *(loc_g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
         }
     }
     //for(int i = 0; i < data->fea_matrix[i].size(); i++){
@@ -106,21 +120,21 @@ void LR::calculate_gradient(){
 void LR::calculate_subgradient(){
     if(c == 0.0){
         for(int j = 0; j < data->fea_dim; j++){
-            *(sub_g + j) = -1 * *(g + j);
+            *(glo_sub_g + j) = -1 * *(glo_g + j);
         }
     }
     else if(c != 0.0){
         for(int j = 0; j < data->fea_dim; j++){
-            if(*(w + j) > 0){
-                *(sub_g + j) = *(g + j) + c;
+            if(*(glo_w + j) > 0){
+                *(glo_sub_g + j) = *(glo_g + j) + c;
             }
-            else if(*(w + j) < 0){
-                *(sub_g + j) = *(g + j) - c;
+            else if(*(glo_w + j) < 0){
+                *(glo_sub_g + j) = *(glo_g + j) - c;
             }
             else {
-                if(*(g + j) - c > 0) *(sub_g + j) = *(g + j) - c;//左导数
-                else if(*(g + j) + c < 0) *(sub_g + j) = *(g + j) + c;
-                else *(sub_g + j) = 0;
+                if(*(glo_g + j) - c > 0) *(glo_sub_g + j) = *(glo_g + j) - c;//左导数
+                else if(*(glo_g + j) + c < 0) *(glo_sub_g + j) = *(glo_g + j) + c;
+                else *(glo_sub_g + j) = 0;
             }
             //std::cout<<*(local_sub_g + j)<<std::endl;
             //std::cout<<c<<std::endl;
@@ -130,19 +144,18 @@ void LR::calculate_subgradient(){
 
 void LR::fix_dir(){
     for(int j = 0; j < data->fea_dim; j++){
-        if(*(next_w + j) * *(w + j) >=0) *(next_w + j) = 0.0;
-        else *(next_w + j) = *(next_w + j);
+        if(*(glo_new_w + j) * *(glo_w + j) >=0) *(glo_new_w + j) = 0.0;
+        else *(glo_new_w + j) = *(glo_new_w + j);
     }
 }
 
 void LR::line_search(){
-    double backoff = 0.5;
     while(true){
         for(int j = 0; j < data->fea_dim; j++){
-            *(next_w + j) = *(w + j) + lambda * *(global_g + j);//local_g equal all nodes g
+            *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
         }
-        new_loss = calculate_loss(next_w);//cal new loss per thread
-        if(new_loss <= loss + lambda * cblas_ddot(data->fea_dim, (double*)sub_g, 1, (double*)global_g, 1)){
+        glo_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
+        if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
         lambda *= backoff;
@@ -150,69 +163,66 @@ void LR::line_search(){
 }
 
 void LR::two_loop(){
-    cblas_dcopy(data->fea_dim, sub_g, 1, q, 1);
-    if(use_list_len < m) m = use_list_len; 
-    for(int loop = m-1; loop >= 0; --loop){
-        ro_list[loop] = cblas_ddot(data->fea_dim, &(*y_list)[loop], 1, &(*s_list)[loop], 1);
-        alpha[loop] = cblas_ddot(data->fea_dim, &(*s_list)[loop], 1, (double*)q, 1) / ro_list[loop];
-        cblas_daxpy(data->fea_dim, -1 * alpha[loop], &(*y_list)[loop], 1, (double*)q, 1);
+    cblas_dcopy(data->fea_dim, glo_sub_g, 1, glo_q, 1);
+    if(now_m > m) now_m = m; 
+    for(int loop = now_m-1; loop >= 0; --loop){
+        glo_ro_list[loop] = cblas_ddot(data->fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
+        glo_alpha_list[loop] = cblas_ddot(data->fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / glo_ro_list[loop];
+        cblas_daxpy(data->fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
     }
 
-    double ydoty = cblas_ddot(data->fea_dim, s_list[step%m - 1], 1, y_list[step%m - 1], 1);
-    float gamma = ro_list[step%m - 1]/ydoty;
-    cblas_sscal(data->fea_dim, gamma, p, 1);
+    double ydoty = cblas_ddot(data->fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
+    float gamma = glo_ro_list[step%now_m - 1]/ydoty;
+    cblas_dscal(data->fea_dim, gamma, (double*)glo_q, 1);
     
-    for(int loop = 0; loop < m; ++loop){
-        double beta = cblas_ddot(data->fea_dim, &(*y_list)[loop], 1, (double*)p, 1)/ro_list[loop];
-        cblas_daxpy(data->fea_dim, alpha[loop] - beta, &(*s_list)[loop], 1, (double*)p, 1);
+    for(int loop = 0; loop < now_m; ++loop){
+        double beta = cblas_ddot(data->fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/glo_ro_list[loop];
+        cblas_daxpy(data->fea_dim, glo_alpha_list[loop] - beta, &(*glo_s_list)[loop], 1, (double*)glo_q, 1);
     }
-    delete [] alpha;
 }
 
-void LR::owlqn(int rank, int n_proc){
+void LR::owlqn(){
     MPI_Status status;
-    int use_list_len = 0;
-    int step = 0;
     while(step < 3){
 	//define and initial local parameters
 	calculate_gradient();//calculate gradient of loss by global w)
 	calculate_subgradient();
 	two_loop();
 	if(rank != 0){
-	    MPI_Send(q, data->fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
+	    MPI_Send(glo_q, data->fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
 	}
 	else if(rank == 0){
 	    for(int j = 0; j < data->fea_dim; j++){
-	        *(global_g + j) += *(q + j);
+	        *(glo_g + j) += *(glo_q + j);
 	    }
-            for(int i = 1; i < nproc; i++){
-                MPI_Recv(q, data->fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
+            for(int i = 1; i < num_proc; i++){
+                MPI_Recv(glo_q, data->fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
 	        for(int j = 0; j < data->fea_dim; j++){
-                    *(global_g + j) += *(q + j);
+                    *(glo_g + j) += *(glo_q + j);
 	        }
             }
-            loss = calculate_loss(w);
+            glo_loss = calculate_loss(glo_w);
 	    line_search();
             fix_dir();//orthant limited
 	}
 	//update slist
-	cblas_daxpy(data->fea_dim, -1, (double*)w, 1, (double*)next_w, 1);
-	cblas_dcopy(data->fea_dim, (double*)next_w, 1, (double*)s_list[(m - use_list_len) % m], 1);
+	cblas_daxpy(data->fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
+	cblas_dcopy(data->fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
 	//update ylist
-	cblas_daxpy(data->fea_dim, -1, (double*)global_g, 1, (double*)global_next_g, 1);
-	cblas_dcopy(data->fea_dim, (double*)global_next_g, 1, (double*)y_list[(m - use_list_len) % m], 1);
-	use_list_len++;
-        if(use_list_len > m){
+	cblas_daxpy(data->fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
+	cblas_dcopy(data->fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
+	now_m++;
+        if(now_m > m){
             for(int j = 0; j < data->fea_dim; j++){
-                 *(*(s_list + abs(m - use_list_len) % m) + j) = 0.0;
-                 *(*(y_list + abs(m - use_list_len) % m) + j) = 0.0;
+                 *(*(glo_s_list + abs(m - now_m) % m) + j) = 0.0;
+                 *(*(glo_y_list + abs(m - now_m) % m) + j) = 0.0;
             }
         }
-        cblas_dcopy(data->fea_dim, (double*)next_w, 1, (double*)w, 1);
+        cblas_dcopy(data->fea_dim, (double*)glo_new_w, 1, (double*)glo_w, 1);
             step++;
         }
 }
 
-void LR::run(int rank, int nproc){
-    owlqn(rank, nproc);
+void LR::run(){
+    owlqn();
 }
