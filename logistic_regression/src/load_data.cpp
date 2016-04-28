@@ -30,7 +30,7 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
             if(end > start){
                 index_str = feature_index[i].substr(start, end - start);
                 float index = atoi(index_str.c_str());
-                if(index > fea_dim) fea_dim = index + 1;
+                if(index > loc_fea_dim) loc_fea_dim = index + 1;
                 sf.idx = index - 1;
             }
             //beg += 1; //this code must remain,it makes me crazy two days!!!
@@ -63,13 +63,13 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
     fin.close();
 
     if(rank != MASTER_ID){
-        MPI_Send(&fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD);
+        MPI_Send(&loc_fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD);
     }
     else{
-	if(fea_dim > g_feature_dim) g_feature_dim = fea_dim;
+	if(loc_fea_dim > glo_feature_dim) glo_feature_dim = loc_fea_dim;
 	for(int i = 1; i < nproc; i++){
-	    MPI_Recv(&fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
-	    if(fea_dim > g_feature_dim) g_feature_dim = fea_dim;
+	    MPI_Recv(&loc_fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
+	    if(loc_fea_dim > glo_feature_dim) glo_feature_dim = loc_fea_dim;
 	}
     }
 }
