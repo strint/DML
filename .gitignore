@@ -4,3 +4,4 @@
 *.o
 data/
 mpi_eval
+train
