@@ -1,7 +1,7 @@
 #include "owlqn.h"
 #include "mpi.h"
 #include <string.h>
-#include "gtest/gtest.h"
+//#include "gtest/gtest.h"
 #include "config.h"
 
 int main(int argc,char* argv[]){  
@@ -15,8 +15,8 @@ int main(int argc,char* argv[]){
     std::string split_tag = " ";
     Load_Data ld; 
     ld.load_data(train_data_file, split_tag, rank, nproc);
-    LR lr(&ld);
-    lr.run(nproc, rank);
+    LR lr(&ld, nproc, rank);
+    lr.run();
     MPI::Finalize();
     return 0;
 }
