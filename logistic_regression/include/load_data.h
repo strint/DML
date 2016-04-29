@@ -22,6 +22,5 @@ public:
 private:
     void split_line(const std::string& line, const std::string& split_tag, std::vector<std::string>& feature_index);
     void get_feature_struct(std::vector<std::string>& feature_index, std::vector<sparse_feature>& key_val);
-    sparse_feature sf;
 };
 #endif
