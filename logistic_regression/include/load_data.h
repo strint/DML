@@ -10,7 +10,6 @@
 #define FEA_DIM_FLAG (99)
 
 class Load_Data {
-
 public:
     Load_Data();
     ~Load_Data();
@@ -18,7 +17,7 @@ public:
     std::vector<std::vector<sparse_feature> > fea_matrix;
     std::vector<double> label;
     long int loc_fea_dim = 0;
-    long int glo_feature_dim = 0;
+    long int glo_fea_dim = 0;
 
 private:
     void split_line(const std::string& line, const std::string& split_tag, std::vector<std::string>& feature_index);

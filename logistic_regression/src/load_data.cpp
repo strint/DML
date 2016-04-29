@@ -66,10 +66,10 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
         MPI_Send(&loc_fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD);
     }
     else{
-	if(loc_fea_dim > glo_feature_dim) glo_feature_dim = loc_fea_dim;
+	if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	for(int i = 1; i < nproc; i++){
 	    MPI_Recv(&loc_fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
-	    if(loc_fea_dim > glo_feature_dim) glo_feature_dim = loc_fea_dim;
+	    if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	}
     }
 }

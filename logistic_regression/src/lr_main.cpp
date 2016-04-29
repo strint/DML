@@ -15,7 +15,7 @@ int main(int argc,char* argv[]){
     std::string split_tag = " ";
     Load_Data ld; 
     ld.load_data(train_data_file, split_tag, rank, nproc);
-    std::cout<<rank<<" "<<nproc<<" "<<ld.fea_dim<<std::endl;
+    std::cout<<rank<<" "<<nproc<<" "<<ld.loc_fea_dim<<std::endl;
     LR lr(&ld, nproc, rank);
     //lr.run();
     MPI::Finalize();
