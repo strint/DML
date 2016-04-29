@@ -23,6 +23,7 @@ void Load_Data::split_line(const std::string& line, const std::string& split_tag
 
 void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std::vector<sparse_feature>& key_val){
     key_val.clear();
+    sparse_feature sf;
     std::string index_str;
     for(int i = 1; i < feature_index.size(); i++){//start from index 1
         int start = 0, end = 0;
