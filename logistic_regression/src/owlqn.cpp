@@ -39,30 +39,30 @@ LR::~LR(){
 void LR::init(){
     c = 1.0;
 
-    glo_w = new double[data->fea_dim]();
-    glo_new_w = new double[data->fea_dim]();
+    glo_w = new double[data->glo_fea_dim]();
+    glo_new_w = new double[data->glo_fea_dim]();
 
-    loc_g = new double[data->fea_dim]();
-    glo_g = new double[data->fea_dim]();
-    loc_new_g = new double[data->fea_dim]();
-    glo_new_g = new double[data->fea_dim]();
+    loc_g = new double[data->glo_fea_dim]();
+    glo_g = new double[data->glo_fea_dim]();
+    loc_new_g = new double[data->glo_fea_dim]();
+    glo_new_g = new double[data->glo_fea_dim]();
 
-    glo_sub_g = new double[data->fea_dim]();
+    glo_sub_g = new double[data->glo_fea_dim]();
 
-    glo_q = new double[data->fea_dim]();
+    glo_q = new double[data->glo_fea_dim]();
 
     m = 10;
     now_m = 0;
     glo_s_list = new double*[m];
     for(int i = 0; i < m; i++){
-        glo_s_list[i] = new double[data->fea_dim]();
+        glo_s_list[i] = new double[data->glo_fea_dim]();
     }
     glo_y_list = new double*[m];
     for(int i = 0; i < m; i++){
-        glo_y_list[i] = new double[data->fea_dim]();
+        glo_y_list[i] = new double[data->glo_fea_dim]();
     }
-    glo_alpha_list = new double[data->fea_dim]();
-    glo_ro_list = new double[data->fea_dim](); 
+    glo_alpha_list = new double[data->glo_fea_dim]();
+    glo_ro_list = new double[data->glo_fea_dim](); 
 
     loc_loss = 0.0;
     glo_loss = 0.0;
@@ -119,12 +119,12 @@ void LR::calculate_gradient(){
 
 void LR::calculate_subgradient(){
     if(c == 0.0){
-        for(int j = 0; j < data->fea_dim; j++){
+        for(int j = 0; j < data->glo_fea_dim; j++){
             *(glo_sub_g + j) = -1 * *(glo_g + j);
         }
     }
     else if(c != 0.0){
-        for(int j = 0; j < data->fea_dim; j++){
+        for(int j = 0; j < data->glo_fea_dim; j++){
             if(*(glo_w + j) > 0){
                 *(glo_sub_g + j) = *(glo_g + j) + c;
             }
@@ -143,7 +143,7 @@ void LR::calculate_subgradient(){
 }
 
 void LR::fix_dir(){
-    for(int j = 0; j < data->fea_dim; j++){
+    for(int j = 0; j < data->glo_fea_dim; j++){
         if(*(glo_new_w + j) * *(glo_w + j) >=0) *(glo_new_w + j) = 0.0;
         else *(glo_new_w + j) = *(glo_new_w + j);
     }
@@ -151,11 +151,11 @@ void LR::fix_dir(){
 
 void LR::line_search(){
     while(true){
-        for(int j = 0; j < data->fea_dim; j++){
+        for(int j = 0; j < data->glo_fea_dim; j++){
             *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
         }
         glo_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
-        if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
+        if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
         lambda *= backoff;
@@ -163,21 +163,21 @@ void LR::line_search(){
 }
 
 void LR::two_loop(){
-    cblas_dcopy(data->fea_dim, glo_sub_g, 1, glo_q, 1);
+    cblas_dcopy(data->glo_fea_dim, glo_sub_g, 1, glo_q, 1);
     if(now_m > m) now_m = m; 
     for(int loop = now_m-1; loop >= 0; --loop){
-        glo_ro_list[loop] = cblas_ddot(data->fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
-        glo_alpha_list[loop] = cblas_ddot(data->fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / glo_ro_list[loop];
-        cblas_daxpy(data->fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
+        glo_ro_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
+        glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / glo_ro_list[loop];
+        cblas_daxpy(data->glo_fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
     }
 
-    double ydoty = cblas_ddot(data->fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
+    double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
     float gamma = glo_ro_list[step%now_m - 1]/ydoty;
-    cblas_dscal(data->fea_dim, gamma, (double*)glo_q, 1);
+    cblas_dscal(data->glo_fea_dim, gamma, (double*)glo_q, 1);
     
     for(int loop = 0; loop < now_m; ++loop){
-        double beta = cblas_ddot(data->fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/glo_ro_list[loop];
-        cblas_daxpy(data->fea_dim, glo_alpha_list[loop] - beta, &(*glo_s_list)[loop], 1, (double*)glo_q, 1);
+        double beta = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/glo_ro_list[loop];
+        cblas_daxpy(data->glo_fea_dim, glo_alpha_list[loop] - beta, &(*glo_s_list)[loop], 1, (double*)glo_q, 1);
     }
 }
 
@@ -189,15 +189,15 @@ void LR::owlqn(){
 	calculate_subgradient();
 	two_loop();
 	if(rank != 0){
-	    MPI_Send(glo_q, data->fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
+	    MPI_Send(glo_q, data->glo_fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
 	}
 	else if(rank == 0){
-	    for(int j = 0; j < data->fea_dim; j++){
+	    for(int j = 0; j < data->glo_fea_dim; j++){
 	        *(glo_g + j) += *(glo_q + j);
 	    }
             for(int i = 1; i < num_proc; i++){
-                MPI_Recv(glo_q, data->fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
-	        for(int j = 0; j < data->fea_dim; j++){
+                MPI_Recv(glo_q, data->glo_fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
+	        for(int j = 0; j < data->glo_fea_dim; j++){
                     *(glo_g + j) += *(glo_q + j);
 	        }
             }
@@ -206,19 +206,19 @@ void LR::owlqn(){
             fix_dir();//orthant limited
 	}
 	//update slist
-	cblas_daxpy(data->fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
-	cblas_dcopy(data->fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
+	cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
+	cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
 	//update ylist
-	cblas_daxpy(data->fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
-	cblas_dcopy(data->fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
+	cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
+	cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
 	now_m++;
         if(now_m > m){
-            for(int j = 0; j < data->fea_dim; j++){
+            for(int j = 0; j < data->glo_fea_dim; j++){
                  *(*(glo_s_list + abs(m - now_m) % m) + j) = 0.0;
                  *(*(glo_y_list + abs(m - now_m) % m) + j) = 0.0;
             }
         }
-        cblas_dcopy(data->fea_dim, (double*)glo_new_w, 1, (double*)glo_w, 1);
+        cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_w, 1);
             step++;
         }
 }
