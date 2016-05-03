@@ -69,10 +69,13 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
     } else {
 	    if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    for(int i = 1; i < nproc; i++){
-            std::cout << "proc " << rank <<" revc proc "<<i<<std::endl;
+            std::cout << "proc " << rank <<" revc proc "<< i << std::endl;
 	        MPI_Recv(&loc_fea_dim, 1, MPI_INT, i, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
-            std::cout << "proc "<< rank <<" revc proc " << i << " over"<<std::endl;
+            std::cout << "proc "<< rank <<" revc proc " << i << " over" << std::endl;
 	        if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    }
     }
+    std::cout << "proc "<< rank << " glo_fea_dim " << glo_fea_dim << " before Bcast" << std::endl;
+    MPI_Bcast(&glo_fea_dim, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+    std::cout << "proc "<< rank << " glo_fea_dim " << glo_fea_dim << " after Bcast" << std::endl;
 }
