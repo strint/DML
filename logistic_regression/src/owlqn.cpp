@@ -147,7 +147,7 @@ void LR::line_search(){
         for(int j = 0; j < data->glo_fea_dim; j++){
             *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
         }
-        glo_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
+        loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
         if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
