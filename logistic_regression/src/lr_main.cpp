@@ -20,7 +20,7 @@ int main(int argc,char* argv[]){
     Load_Data ld; 
     ld.load_data(train_data_path, split_tag, rank, nproc);
     LR lr(&ld, nproc, rank);
-    //lr.run();
+    lr.run();
     MPI::Finalize();
     return 0;
 }

@@ -96,7 +96,6 @@ double LR::calculate_loss(double *para_w){
 
 void LR::calculate_gradient(){
     double f = 0.0;
-    //std::cout<<data->fea_matrix.size()<<"----"<<std::endl;
     for(int i = 0; i < data->fea_matrix.size(); i++){
         int index;
         double wx = 0.0, value = 0.0;
@@ -109,7 +108,7 @@ void LR::calculate_gradient(){
         }
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
             //std::cout<<data->label[i]<<std::endl;
-            *(loc_g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
+            *(glo_g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
         }
     }
     //for(int i = 0; i < data->fea_matrix[i].size(); i++){
