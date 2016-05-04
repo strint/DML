@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cmath>
 #include "load_data.h"
 #include "stdlib.h"
 
@@ -46,36 +47,46 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
     }
 }
 
-void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
+void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc, long int glo_samp_num){
     MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
-    if(!fin) std::cerr<< "process "<<rank<<" open error get feature number..."<<data_file<<std::endl;
+    if(!fin) std::cerr << "process "<< rank << " open error get feature number..." << data_file << std::endl;
+    loc_samp_num = std::ceil(glo_samp_num/(double)nproc);
+    long int loc_samp_start_num = loc_samp_num * rank + 1;
+    long int loc_samp_count = 0;
+    long int line_count = 0;
     int y = 0;
     std::string line;
     std::vector<std::string> feature_index;
     std::vector<sparse_feature> key_val;
-    while(getline(fin, line)){
-        split_line(line, split_tag, feature_index);
-        y = atof(feature_index[0].c_str());
-        label.push_back(y);
-        get_feature_struct(feature_index, key_val);
-        fea_matrix.push_back(key_val);
+    while(getline(fin, line) && loc_samp_count < loc_samp_num){
+        line_count++;
+        if(line_count >= loc_samp_start_num) {
+            split_line(line, split_tag, feature_index);
+            y = atof(feature_index[0].c_str());
+            label.push_back(y);
+            get_feature_struct(feature_index, key_val);
+            fea_matrix.push_back(key_val);
+            loc_samp_count++;
+        }
     }
     fin.close();
+    loc_samp_num = loc_samp_count;
 
     if(rank != MASTER_ID){
-        std::cout << "proc " << rank <<" send" << std::endl;
+        std::cout << "process " << rank <<" send" << std::endl;
         MPI_Send(&loc_fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD);
     } else {
 	    if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    for(int i = 1; i < nproc; i++){
-            std::cout << "proc " << rank <<" revc proc "<< i << std::endl;
-	        MPI_Recv(&loc_fea_dim, 1, MPI_INT, i, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
-            std::cout << "proc "<< rank <<" revc proc " << i << " over" << std::endl;
-	        if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
+            std::cout << "process " << rank <<" revc process "<< i << std::endl;
+            long int other_loc_fea_dim;
+	        MPI_Recv(&other_loc_fea_dim, 1, MPI_INT, i, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
+            std::cout << "process "<< rank <<" revc process " << i << " over" << std::endl;
+	        if(other_loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    }
     }
-    std::cout << "proc "<< rank << " glo_fea_dim " << glo_fea_dim << " before Bcast" << std::endl;
+    std::cout << "process "<< rank << " glo_fea_dim " << glo_fea_dim << " before Bcast" << std::endl;
     MPI_Bcast(&glo_fea_dim, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
-    std::cout << "proc "<< rank << " glo_fea_dim " << glo_fea_dim << " after Bcast" << std::endl;
+    std::cout << "process "<< rank << " glo_fea_dim " << glo_fea_dim << " after Bcast" << std::endl;
 }
