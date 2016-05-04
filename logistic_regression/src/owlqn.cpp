@@ -102,18 +102,12 @@ void LR::calculate_gradient(){
         for(int j = 0; j <data->fea_matrix[i].size(); j++){
             index = data->fea_matrix[i][j].idx;
             value = data->fea_matrix[i][j].val;
-            //std::cout<<"index="<<index<<std::endl;
-            //std::cout<<"value="<<value<<std::endl;
             wx += *(glo_w + index) * value;
         }
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
-            //std::cout<<data->label[i]<<std::endl;
             *(glo_g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
         }
     }
-    //for(int i = 0; i < data->fea_matrix[i].size(); i++){
-    //    std::cout<<*(para_g + i) <<std::endl;
-    //}
 }
 
 void LR::calculate_subgradient(){
@@ -200,7 +194,8 @@ void LR::owlqn(){
                     *(glo_g + j) += *(glo_q + j);
 	        }
             }
-            glo_loss = calculate_loss(glo_w);
+            loc_loss = calculate_loss(glo_w);
+	    MPI_Reduce(&loc_loss, &glo_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
 	    line_search();
             fix_dir();//orthant limited
 	}
