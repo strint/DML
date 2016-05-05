@@ -96,25 +96,18 @@ double LR::calculate_loss(double *para_w){
 
 void LR::calculate_gradient(){
     double f = 0.0;
-    //std::cout<<data->fea_matrix.size()<<"----"<<std::endl;
     for(int i = 0; i < data->fea_matrix.size(); i++){
         int index;
         double wx = 0.0, value = 0.0;
         for(int j = 0; j <data->fea_matrix[i].size(); j++){
             index = data->fea_matrix[i][j].idx;
             value = data->fea_matrix[i][j].val;
-            //std::cout<<"index="<<index<<std::endl;
-            //std::cout<<"value="<<value<<std::endl;
             wx += *(glo_w + index) * value;
         }
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
-            //std::cout<<data->label[i]<<std::endl;
-            *(loc_g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
+            *(glo_g + j) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
         }
     }
-    //for(int i = 0; i < data->fea_matrix[i].size(); i++){
-    //    std::cout<<*(para_g + i) <<std::endl;
-    //}
 }
 
 void LR::calculate_subgradient(){
@@ -154,7 +147,7 @@ void LR::line_search(){
         for(int j = 0; j < data->glo_fea_dim; j++){
             *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
         }
-        glo_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
+        loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
         if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
@@ -201,7 +194,8 @@ void LR::owlqn(){
                     *(glo_g + j) += *(glo_q + j);
 	        }
             }
-            glo_loss = calculate_loss(glo_w);
+            loc_loss = calculate_loss(glo_w);
+	    MPI_Reduce(&loc_loss, &glo_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
 	    line_search();
             fix_dir();//orthant limited
 	}

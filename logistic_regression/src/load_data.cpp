@@ -50,7 +50,8 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
 void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
     MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
-    if(!fin) std::cerr << "process "<< rank << " open error get feature number..." << data_file << std::endl;
+    if(!fin) std::cerr << "process "<< rank << " open file error: " << data_file << std::endl;
+    std::cout << "read "<< data_file << std::endl;
     int y = 0;
     std::string line;
     std::vector<std::string> feature_index;
@@ -66,7 +67,7 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
     fin.close();
 
     if(rank != MASTER_ID){
-        std::cout << "process " << rank <<" send" << std::endl;
+        std::cout << "process " << rank <<" send loc_fea_dim" << std::endl;
         MPI_Send(&loc_fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD);
     } else {
 	    if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
