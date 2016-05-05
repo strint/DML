@@ -6,4 +6,4 @@ mkdir backup/"$tt"
 mv *.log backup/"$tt"
 mv core backup/"$tt"
 #make
-mpirun -np 4 ./train ./data/agaricus.train ./data/agaricus.test
+mpirun -np 4 ./train ./data/agaricus.txt.train ./data/agaricus.txt.test

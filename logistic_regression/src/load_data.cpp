@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cmath>
 #include "load_data.h"
 #include "stdlib.h"
 
@@ -49,7 +50,8 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
 void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
     MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
-    if(!fin) std::cerr<< "process "<<rank<<" open error get feature number..."<<data_file<<std::endl;
+    if(!fin) std::cerr << "process "<< rank << " open file error: " << data_file << std::endl;
+    std::cout << "read "<< data_file << std::endl;
     int y = 0;
     std::string line;
     std::vector<std::string> feature_index;
@@ -60,22 +62,24 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
         label.push_back(y);
         get_feature_struct(feature_index, key_val);
         fea_matrix.push_back(key_val);
+        loc_samp_num++;
     }
     fin.close();
 
     if(rank != MASTER_ID){
-        std::cout << "proc " << rank <<" send" << std::endl;
+        std::cout << "process " << rank <<" send loc_fea_dim" << std::endl;
         MPI_Send(&loc_fea_dim, 1, MPI_INT, MASTER_ID, FEA_DIM_FLAG, MPI_COMM_WORLD);
     } else {
 	    if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    for(int i = 1; i < nproc; i++){
-            std::cout << "proc " << rank <<" revc proc "<< i << std::endl;
-	        MPI_Recv(&loc_fea_dim, 1, MPI_INT, i, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
-            std::cout << "proc "<< rank <<" revc proc " << i << " over" << std::endl;
-	        if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
+            std::cout << "process " << rank <<" revc process "<< i << std::endl;
+            long int other_loc_fea_dim;
+	        MPI_Recv(&other_loc_fea_dim, 1, MPI_INT, i, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
+            std::cout << "process "<< rank <<" revc process " << i << " over" << std::endl;
+	        if(other_loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    }
     }
-    std::cout << "proc "<< rank << " glo_fea_dim " << glo_fea_dim << " before Bcast" << std::endl;
+    std::cout << "process "<< rank << " glo_fea_dim " << glo_fea_dim << " before Bcast" << std::endl;
     MPI_Bcast(&glo_fea_dim, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
-    std::cout << "proc "<< rank << " glo_fea_dim " << glo_fea_dim << " after Bcast" << std::endl;
+    std::cout << "process "<< rank << " glo_fea_dim " << glo_fea_dim << " after Bcast" << std::endl;
 }
