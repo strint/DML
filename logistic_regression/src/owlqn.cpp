@@ -133,7 +133,7 @@ void LR::calculate_subgradient(){
                 *(glo_sub_g + j) = *(glo_g + j) - c;
             }
             else {
-		std::cout<<*(glo_g + j) - c<<std::endl;
+		//std::cout<<*(glo_g + j) - c<<std::endl;
                 if(*(glo_g + j) - c > 0) *(glo_sub_g + j) = *(glo_g + j) - c;//左导数
                 else if(*(glo_g + j) + c < 0) *(glo_sub_g + j) = *(glo_g + j) + c;
                 else *(glo_sub_g + j) = 0;
@@ -174,10 +174,12 @@ void LR::two_loop(){
         cblas_daxpy(data->glo_fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
     }
 
-    double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
-    float gamma = glo_ro_list[step%now_m - 1]/ydoty;
-    cblas_dscal(data->glo_fea_dim, gamma, (double*)glo_q, 1);
-    
+    if(step != 0){
+        double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
+        float gamma = glo_ro_list[step%now_m - 1]/ydoty;
+        cblas_dscal(data->glo_fea_dim, gamma, (double*)glo_q, 1);
+    }
+
     for(int loop = 0; loop < now_m; ++loop){
         double beta = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/glo_ro_list[loop];
         cblas_daxpy(data->glo_fea_dim, glo_alpha_list[loop] - beta, &(*glo_s_list)[loop], 1, (double*)glo_q, 1);
@@ -190,7 +192,6 @@ void LR::owlqn(){
 	//define and initial local parameters
 	calculate_gradient();//calculate gradient of loss by global w)
 	calculate_subgradient();
-	return;
 	two_loop();
         return;
 	if(rank != 0){
