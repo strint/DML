@@ -47,31 +47,23 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
     }
 }
 
-void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc, long int glo_samp_num){
+void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
     MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
     if(!fin) std::cerr << "process "<< rank << " open error get feature number..." << data_file << std::endl;
-    loc_samp_num = std::ceil(glo_samp_num/(double)nproc);
-    long int loc_samp_start_num = loc_samp_num * rank + 1;
-    long int loc_samp_count = 0;
-    long int line_count = 0;
     int y = 0;
     std::string line;
     std::vector<std::string> feature_index;
     std::vector<sparse_feature> key_val;
-    while(getline(fin, line) && loc_samp_count < loc_samp_num){
-        line_count++;
-        if(line_count >= loc_samp_start_num) {
-            split_line(line, split_tag, feature_index);
-            y = atof(feature_index[0].c_str());
-            label.push_back(y);
-            get_feature_struct(feature_index, key_val);
-            fea_matrix.push_back(key_val);
-            loc_samp_count++;
-        }
+    while(getline(fin, line)){
+        split_line(line, split_tag, feature_index);
+        y = atof(feature_index[0].c_str());
+        label.push_back(y);
+        get_feature_struct(feature_index, key_val);
+        fea_matrix.push_back(key_val);
+        loc_samp_num++;
     }
     fin.close();
-    loc_samp_num = loc_samp_count;
 
     if(rank != MASTER_ID){
         std::cout << "process " << rank <<" send" << std::endl;
