@@ -68,14 +68,19 @@ private:
     double backoff; //back rate in line search
 
     void init();
+
     void owlqn();
+
     void calculate_gradient();
     void calculate_subgradient();
     void two_loop();
+    void fix_dir();
     void line_search();
+    bool meet_criterion();
+    void update_memory();
+
     double calculate_loss(double *w);
     double sigmoid(double x);
-    void fix_dir();
 };
 #endif // LR_H_
 

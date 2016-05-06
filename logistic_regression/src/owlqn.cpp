@@ -186,47 +186,41 @@ void LR::two_loop(){
     }
 }
 
+void LR::update_memory(){
+    //update slist
+    cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
+    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
+    //update ylist
+    cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
+    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
+    now_m++;
+    if(now_m > m){
+        for(int j = 0; j < data->glo_fea_dim; j++){
+            *(*(glo_s_list + abs(m - now_m) % m) + j) = 0.0;
+            *(*(glo_y_list + abs(m - now_m) % m) + j) = 0.0;
+        }
+    }
+    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_w, 1);
+    step++;
+}
+
+bool LR::meet_criterion(){
+    return false;
+}
+
 void LR::owlqn(){
     MPI_Status status;
-    while(step < 3){
-        //define and initial local parameters
-        calculate_gradient();//calculate gradient of loss by global w)
-        calculate_subgradient();
-        two_loop();
-        return;
-        if(rank != 0){
-            MPI_Send(glo_q, data->glo_fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
+    while(true){
+        calculate_gradient(); //distributed, calculate gradient is distributed
+        calculate_subgradient(); //not distributed, only on master process
+        two_loop();//not distributed, only on master process
+        fix_dir();//not distributed, orthant limited
+        line_search();//distributed, calculate loss is distributed
+        if(meet_criterion()) {//not distributed
+            break;
+        } else {
+            update_memory();//not distributed
         }
-        else if(rank == 0){
-            for(int j = 0; j < data->glo_fea_dim; j++){
-                *(glo_g + j) += *(glo_q + j);
-            }
-            for(int i = 1; i < num_proc; i++){
-                MPI_Recv(glo_q, data->glo_fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
-                for(int j = 0; j < data->glo_fea_dim; j++){
-                    *(glo_g + j) += *(glo_q + j);
-                }
-            }
-            loc_loss = calculate_loss(glo_w);
-            MPI_Reduce(&loc_loss, &glo_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
-            line_search();
-            fix_dir();//orthant limited
-        }
-        //update slist
-        cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
-        cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
-        //update ylist
-        cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
-        cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
-        now_m++;
-        if(now_m > m){
-            for(int j = 0; j < data->glo_fea_dim; j++){
-                *(*(glo_s_list + abs(m - now_m) % m) + j) = 0.0;
-                *(*(glo_y_list + abs(m - now_m) % m) + j) = 0.0;
-            }
-        }
-        cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_w, 1);
-        step++;
     }
 }
 
