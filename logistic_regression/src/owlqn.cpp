@@ -8,9 +8,9 @@ extern "C"{
 }
 
 LR::LR(Load_Data* ld, int total_num_proc, int my_rank) 
-       : data(ld), num_proc(total_num_proc), rank(my_rank) {
-    init();
-}
+    : data(ld), num_proc(total_num_proc), rank(my_rank) {
+        init();
+    }
 
 LR::~LR(){
     delete[] glo_w; 
@@ -105,15 +105,15 @@ void LR::calculate_gradient(){
             wx += *(glo_w + index) * value;
         }
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
-	    index = data->fea_matrix[i][j].idx;
+            index = data->fea_matrix[i][j].idx;
             *(glo_g + index) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
         }
     }
     /*
-    for(int j = 0; j < data->fea_matrix[0].size(); j++){
-	index = data->fea_matrix[0][j].idx;
-        std::cout<<*(glo_g + index)<<std::endl;
-    }*/
+       for(int j = 0; j < data->fea_matrix[0].size(); j++){
+       index = data->fea_matrix[0][j].idx;
+       std::cout<<*(glo_g + index)<<std::endl;
+       }*/
 }
 
 void LR::calculate_subgradient(){
@@ -124,8 +124,8 @@ void LR::calculate_subgradient(){
     }
     else if(c != 0.0){
         for(int j = 0; j < data->glo_fea_dim; j++){
-	    //std::cout<<*(glo_g + j)<<std::endl;
-	    //std::cout<<*(glo_w + j)<<std::endl;
+            //std::cout<<*(glo_g + j)<<std::endl;
+            //std::cout<<*(glo_w + j)<<std::endl;
             if(*(glo_w + j) > 0){
                 *(glo_sub_g + j) = *(glo_g + j) + c;
             }
@@ -133,7 +133,7 @@ void LR::calculate_subgradient(){
                 *(glo_sub_g + j) = *(glo_g + j) - c;
             }
             else {
-		//std::cout<<*(glo_g + j) - c<<std::endl;
+                //std::cout<<*(glo_g + j) - c<<std::endl;
                 if(*(glo_g + j) - c > 0) *(glo_sub_g + j) = *(glo_g + j) - c;//左导数
                 else if(*(glo_g + j) + c < 0) *(glo_sub_g + j) = *(glo_g + j) + c;
                 else *(glo_sub_g + j) = 0;
@@ -157,7 +157,7 @@ void LR::line_search(){
             *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
         }
         loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
-	MPI_Reduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
+        MPI_Reduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
         if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
@@ -189,45 +189,45 @@ void LR::two_loop(){
 void LR::owlqn(){
     MPI_Status status;
     while(step < 3){
-	//define and initial local parameters
-	calculate_gradient();//calculate gradient of loss by global w)
-	calculate_subgradient();
-	two_loop();
+        //define and initial local parameters
+        calculate_gradient();//calculate gradient of loss by global w)
+        calculate_subgradient();
+        two_loop();
         return;
-	if(rank != 0){
-	    MPI_Send(glo_q, data->glo_fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
-	}
-	else if(rank == 0){
-	    for(int j = 0; j < data->glo_fea_dim; j++){
-	        *(glo_g + j) += *(glo_q + j);
-	    }
+        if(rank != 0){
+            MPI_Send(glo_q, data->glo_fea_dim, MPI_DOUBLE, 0, 2012, MPI_COMM_WORLD);
+        }
+        else if(rank == 0){
+            for(int j = 0; j < data->glo_fea_dim; j++){
+                *(glo_g + j) += *(glo_q + j);
+            }
             for(int i = 1; i < num_proc; i++){
                 MPI_Recv(glo_q, data->glo_fea_dim, MPI_DOUBLE, MPI_ANY_SOURCE, 2012, MPI_COMM_WORLD, &status);
-	        for(int j = 0; j < data->glo_fea_dim; j++){
+                for(int j = 0; j < data->glo_fea_dim; j++){
                     *(glo_g + j) += *(glo_q + j);
-	        }
+                }
             }
             loc_loss = calculate_loss(glo_w);
-	    MPI_Reduce(&loc_loss, &glo_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
-	    line_search();
+            MPI_Reduce(&loc_loss, &glo_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
+            line_search();
             fix_dir();//orthant limited
-	}
-	//update slist
-	cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
-	cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
-	//update ylist
-	cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
-	cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
-	now_m++;
+        }
+        //update slist
+        cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
+        cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
+        //update ylist
+        cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
+        cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
+        now_m++;
         if(now_m > m){
             for(int j = 0; j < data->glo_fea_dim; j++){
-                 *(*(glo_s_list + abs(m - now_m) % m) + j) = 0.0;
-                 *(*(glo_y_list + abs(m - now_m) % m) + j) = 0.0;
+                *(*(glo_s_list + abs(m - now_m) % m) + j) = 0.0;
+                *(*(glo_y_list + abs(m - now_m) % m) + j) = 0.0;
             }
         }
         cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_w, 1);
-            step++;
-        }
+        step++;
+    }
 }
 
 void LR::run(){

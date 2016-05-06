@@ -45,7 +45,6 @@ private:
 
     //sub gradient
     double* glo_sub_g; //global sub gradient
-    //double *next_g;
 
     //search direction
     double* glo_q; //global search direction

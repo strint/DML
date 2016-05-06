@@ -1,4 +1,5 @@
 #include <string>
+#include "load_data.h"
 #include "owlqn.h"
 #include "mpi.h"
 //#include "gtest/gtest.h"
