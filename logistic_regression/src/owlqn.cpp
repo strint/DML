@@ -229,7 +229,6 @@ bool LR::meet_criterion(){
 }
 
 void LR::owlqn(){
-    MPI_Status status;
     while(true){
         calculate_gradient(); //distributed, calculate gradient is distributed
         calculate_subgradient(); //not distributed, only on master process

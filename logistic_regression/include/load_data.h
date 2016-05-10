@@ -19,6 +19,7 @@ public:
     long int loc_fea_dim = 0;
     long int glo_fea_dim = 0;
     long int loc_samp_num = 0;
+    int data_rank;
 
 private:
     void split_line(const std::string& line, const std::string& split_tag, std::vector<std::string>& feature_index);

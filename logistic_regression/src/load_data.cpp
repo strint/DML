@@ -26,22 +26,21 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
     key_val.clear();
     sparse_feature sf;
     std::string index_str;
+    std::string value_str;
     for(int i = 1; i < feature_index.size(); i++){//start from index 1
         int start = 0, end = 0;
         while((end = feature_index[i].find_first_of(":", start)) != std::string::npos){
             if(end > start){
                 index_str = feature_index[i].substr(start, end - start);
-                float index = atoi(index_str.c_str());
-                if(index > loc_fea_dim) loc_fea_dim = index + 1;
-                sf.idx = index - 1;
+                sf.idx = atoi(index_str.c_str());
+                if(sf.idx + 1 > loc_fea_dim) loc_fea_dim = sf.idx + 1;
             }
             //beg += 1; //this code must remain,it makes me crazy two days!!!
             start = end + 1;
         }
         if(start < feature_index[i].size()){
-            index_str = feature_index[i].substr(start);
-            float value = atoi(index_str.c_str());
-            sf.val = value;
+            value_str = feature_index[i].substr(start);
+            sf.val = atof(value_str.c_str());
         }
         key_val.push_back(sf);
     }
@@ -50,9 +49,10 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
 void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
     MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
+    data_rank = rank;
     if(!fin) std::cerr << "process "<< rank << " open file error: " << data_file << std::endl;
     //std::cout << "read "<< data_file << std::endl;
-    int y = 0;
+    double y = 0.0;
     std::string line;
     std::vector<std::string> feature_index;
     std::vector<sparse_feature> key_val;
