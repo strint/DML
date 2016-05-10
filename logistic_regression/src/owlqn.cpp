@@ -83,7 +83,8 @@ double LR::sigmoid(double x){
  	return 0.9;
     }
     else{
-        return 1.0 / (1.0 + exp(-x));
+	double ex = pow(2.718281828, x);
+        return ex / (1.0 + ex);
     }
 }
 
@@ -95,7 +96,7 @@ double LR::calculate_loss(double *para_w){
             index = data->fea_matrix[i][j].idx;
             val = data->fea_matrix[i][j].val;
   	    //std::cout<<*(para_w + index)<<std::endl;
-            wx += -*(para_w + index) * val;//maybe add bias later
+            wx += *(para_w + index) * val;//maybe add bias later
         }
         //std::cout<<"wx: "<<sigmoid(wx)<<std::endl;
         single_loss = data->label[i] * log(sigmoid(wx)) + (1 - data->label[i]) * log(1 - sigmoid(wx));
@@ -174,14 +175,13 @@ void LR::line_search(){
         }
         loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
 	//std::cout<<"masterid:"<<MASTER_ID<<std::endl;
-        //std::cout<<"rank:"<<rank<<" loc_new_loss:"<<loc_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
+        std::cout<<"before reduce rank:"<<rank<<" loc_new_loss:"<<loc_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
         MPI_Allreduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        //std::cout<<"after rank:"<<rank<<" glo_new_loss:"<<glo_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
+        std::cout<<"after reduce rank:"<<rank<<" glo_new_loss:"<<glo_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
         if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
         lambda *= backoff;
-	break;
     }
 }
 
