@@ -76,20 +76,30 @@ void LR::init(){
 }
 
 double LR::sigmoid(double x){
-    return 1/(1+exp(-x));
+    if(x < -3){
+	return 3;
+    }
+    else if(x > 3){
+ 	return 0.9;
+    }
+    else{
+        return 1.0 / (1.0 + exp(-x));
+    }
 }
 
 double LR::calculate_loss(double *para_w){
-    double f = 0.0;
+    double f = 0.0, val = 0.0, wx = 0.0, single_loss = 0.0;
+    int index;
     for(int i = 0; i < data->fea_matrix.size(); i++){
-        double wx = 0.0;
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
-            int id = data->fea_matrix[i][j].idx;
-            double val = data->fea_matrix[i][j].val;
-            wx += -*(para_w + id) * val;//maybe add bias later
+            index = data->fea_matrix[i][j].idx;
+            val = data->fea_matrix[i][j].val;
+  	    //std::cout<<*(para_w + index)<<std::endl;
+            wx += -*(para_w + index) * val;//maybe add bias later
         }
-        double l = data->label[i] * log(sigmoid(wx)) + (1 - data->label[i]) * log(1 - sigmoid(wx));
-        f += l;
+        //std::cout<<"wx: "<<sigmoid(wx)<<std::endl;
+        single_loss = data->label[i] * log(sigmoid(wx)) + (1 - data->label[i]) * log(1 - sigmoid(wx));
+        f += single_loss;
     }
     return f / data->fea_matrix.size();
 }
@@ -97,16 +107,22 @@ double LR::calculate_loss(double *para_w){
 void LR::calculate_gradient(){
     double f = 0.0;
     int index;
-    for(int i = 0; i < data->fea_matrix.size(); i++){
+    int instance_num = data->fea_matrix.size();
+    //std::cout<<"rank"<<rank<<"instance dim"<<instance_num<<std::endl;
+    for(int i = 0; i < instance_num; i++){
         double wx = 0.0, value = 0.0;
-        for(int j = 0; j <data->fea_matrix[i].size(); j++){
+        int single_feature_num = data->fea_matrix[i].size();
+        //std::cout<<"rank"<<rank<<"instance dim"<<single_feature_num<<std::endl;
+        for(int j = 0; j < single_feature_num; j++){
             index = data->fea_matrix[i][j].idx;
             value = data->fea_matrix[i][j].val;
             wx += *(glo_w + index) * value;
         }
-        for(int j = 0; j < data->fea_matrix[i].size(); j++){
+        for(int j = 0; j < single_feature_num; j++){
             index = data->fea_matrix[i][j].idx;
-            *(glo_g + index) += (sigmoid(wx) - data->label[i]) * value / (1.0 * data->fea_matrix.size());
+            //std::cout<<index<<std::endl;
+            *(glo_g + index) += (sigmoid(wx) - data->label[i]) * value / (1.0 * instance_num);
+            //std::cout<<*(glo_g + index)<<std::endl;
         }
     }
     /*
@@ -157,11 +173,15 @@ void LR::line_search(){
             *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
         }
         loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
-        MPI_Reduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MASTER_ID, MPI_COMM_WORLD);
+	//std::cout<<"masterid:"<<MASTER_ID<<std::endl;
+        //std::cout<<"rank:"<<rank<<" loc_new_loss:"<<loc_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
+        MPI_Allreduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        //std::cout<<"after rank:"<<rank<<" glo_new_loss:"<<glo_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
         if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
         lambda *= backoff;
+	break;
     }
 }
 
@@ -173,13 +193,11 @@ void LR::two_loop(){
         glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / glo_ro_list[loop];
         cblas_daxpy(data->glo_fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
     }
-
     if(step != 0){
         double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
         float gamma = glo_ro_list[step%now_m - 1]/ydoty;
         cblas_dscal(data->glo_fea_dim, gamma, (double*)glo_q, 1);
     }
-
     for(int loop = 0; loop < now_m; ++loop){
         double beta = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/glo_ro_list[loop];
         cblas_daxpy(data->glo_fea_dim, glo_alpha_list[loop] - beta, &(*glo_s_list)[loop], 1, (double*)glo_q, 1);
@@ -205,6 +223,7 @@ void LR::update_memory(){
 }
 
 bool LR::meet_criterion(){
+    if(step == 3) return true;
     return false;
 }
 
@@ -216,9 +235,11 @@ void LR::owlqn(){
         two_loop();//not distributed, only on master process
         fix_dir();//not distributed, orthant limited
         line_search();//distributed, calculate loss is distributed
+        break;
         if(meet_criterion()) {//not distributed
             break;
         } else {
+            //std::cout<<rank<<":"<<step<<std::endl;
             update_memory();//not distributed
         }
     }
