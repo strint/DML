@@ -49,7 +49,6 @@ void Load_Data::get_feature_struct(std::vector<std::string>& feature_index, std:
 void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
     MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
-    data_rank = rank;
     if(!fin) std::cerr << "process "<< rank << " open file error: " << data_file << std::endl;
     //std::cout << "read "<< data_file << std::endl;
     double y = 0.0;
