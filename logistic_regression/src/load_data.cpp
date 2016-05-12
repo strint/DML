@@ -61,7 +61,7 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
         label.push_back(y);
         get_feature_struct(feature_index, key_val);
         fea_matrix.push_back(key_val);
-        loc_samp_num++;
+        loc_ins_num++;
     }
     fin.close();
 

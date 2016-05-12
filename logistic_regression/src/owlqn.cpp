@@ -1,6 +1,7 @@
 #include "mpi.h"
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include "owlqn.h"
 
 extern "C"{
@@ -15,6 +16,8 @@ LR::LR(Load_Data* ld, int total_num_proc, int my_rank)
 LR::~LR(){
     delete[] glo_w; 
     delete[] glo_new_w;
+
+    delete[] loc_z;
 
     delete[] loc_g;
     delete[] glo_g;
@@ -41,6 +44,8 @@ void LR::init(){
 
     glo_w = new double[data->glo_fea_dim]();
     glo_new_w = new double[data->glo_fea_dim]();
+
+    loc_z = new double[data->loc_ins_num]();
 
     loc_g = new double[data->glo_fea_dim]();
     glo_g = new double[data->glo_fea_dim]();
@@ -73,6 +78,20 @@ void LR::init(){
     backoff = 0.5;
 
     step = 0;
+}
+
+void LR::calculate_z() {
+    size_t idx = 0;
+    double val = 0;
+    for(int i = 0; i < data->loc_ins_num; i++) {
+        loc_z[i] = 0;
+        for(int j = 0; j < data->fea_matrix[i].size(); j++) {
+            idx = data->fea_matrix[i][j].idx;
+            val = data->fea_matrix[i][j].val;
+            loc_z[i] += glo_w[idx] * val;
+        }
+        loc_z[i] *= data->label[i];
+    }
 }
 
 double LR::sigmoid(double x){
@@ -207,6 +226,22 @@ void LR::two_loop(){
     }
 }
 
+void LR::update_state(){
+    //update w
+    std::swap(glo_w, glo_new_w); 
+
+    //update loss
+    glo_loss = glo_new_loss;
+
+    //update z
+    calculate_z();
+
+    //update lbfgs memory
+    update_memory();//not distributed
+
+    //update step count
+    step++;
+}
 void LR::update_memory(){
     //update slist
     cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
@@ -215,7 +250,6 @@ void LR::update_memory(){
     cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
     cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[now_m % m], 1);
     now_m++;
-    step++;
 }
 
 bool LR::meet_criterion(){
@@ -230,12 +264,12 @@ void LR::owlqn(){
         two_loop();//not distributed, only on master process
         fix_dir();//not distributed, orthant limited
         line_search();//distributed, calculate loss is distributed
-	std::cout<<"step "<<step<<std::endl;
+	    std::cout<<"step "<<step<<std::endl;
         if(meet_criterion()) {//not distributed
             break;
         } else {
             //std::cout<<rank<<":"<<step<<std::endl;
-            update_memory();//not distributed
+            update_state();
         }
     }
 }

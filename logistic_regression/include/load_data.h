@@ -18,7 +18,7 @@ public:
     std::vector<double> label;
     long int loc_fea_dim = 0;
     long int glo_fea_dim = 0;
-    long int loc_samp_num = 0;
+    long int loc_ins_num = 0;
 
 private:
     void split_line(const std::string& line, const std::string& split_tag, std::vector<std::string>& feature_index);
