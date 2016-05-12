@@ -76,11 +76,11 @@ void LR::init(){
 }
 
 double LR::sigmoid(double x){
-    if(x < -3){
-	return 3;
+    if(x < -30){
+	return 1e-6;
     }
-    else if(x > 3){
- 	return 0.9;
+    else if(x > 30){
+ 	return 1.0;
     }
     else{
 	double ex = pow(2.718281828, x);
@@ -92,7 +92,7 @@ double LR::calculate_loss(double *para_w){
     double f = 0.0, val = 0.0, wx = 0.0, single_loss = 0.0;
     int index;
     for(int i = 0; i < data->fea_matrix.size(); i++){
-        double wx = 0.0;
+        wx = 0.0;
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
             index = data->fea_matrix[i][j].idx;
             val = data->fea_matrix[i][j].val;
@@ -176,13 +176,15 @@ void LR::line_search(){
         }
         loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
 	//std::cout<<"masterid:"<<MASTER_ID<<std::endl;
-        std::cout<<"before reduce rank:"<<rank<<" loc_new_loss:"<<loc_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
+        //std::cout<<"before reduce rank:"<<rank<<" loc_new_loss:"<<loc_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
         MPI_Allreduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        std::cout<<"after reduce rank:"<<rank<<" glo_new_loss:"<<glo_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
+        //std::cout<<"after reduce rank:"<<rank<<" glo_new_loss:"<<glo_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
         if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
         lambda *= backoff;
+	//std::cout<<lambda<<std::endl;
+	if(lambda <= 1e-6) break;
     }
 }
 
@@ -208,18 +210,11 @@ void LR::two_loop(){
 void LR::update_memory(){
     //update slist
     cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
-    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[(m - now_m) % m], 1);
+    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[now_m % m], 1);
     //update ylist
     cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_g, 1, (double*)glo_new_g, 1);
-    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[(m - now_m) % m], 1);
+    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_g, 1, (double*)glo_y_list[now_m % m], 1);
     now_m++;
-    if(now_m > m){
-        for(int j = 0; j < data->glo_fea_dim; j++){
-            *(*(glo_s_list + abs(m - now_m) % m) + j) = 0.0;
-            *(*(glo_y_list + abs(m - now_m) % m) + j) = 0.0;
-        }
-    }
-    cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_w, 1);
     step++;
 }
 
@@ -235,7 +230,7 @@ void LR::owlqn(){
         two_loop();//not distributed, only on master process
         fix_dir();//not distributed, orthant limited
         line_search();//distributed, calculate loss is distributed
-        break;
+	std::cout<<"step "<<step<<std::endl;
         if(meet_criterion()) {//not distributed
             break;
         } else {
