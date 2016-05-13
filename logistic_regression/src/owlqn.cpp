@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include "owlqn.h"
+#include <glog/logging.h>
 
 extern "C"{
 #include <cblas.h>
@@ -44,8 +45,12 @@ void LR::init(){
 
     glo_w = new double[data->glo_fea_dim]();
     glo_new_w = new double[data->glo_fea_dim]();
+    for(int i = 0; i < data->glo_fea_dim; i++) {
+        glo_w[i] = 1;
+    }
 
     loc_z = new double[data->loc_ins_num]();
+    calculate_z();
 
     loc_g = new double[data->glo_fea_dim]();
     glo_g = new double[data->glo_fea_dim]();
@@ -96,13 +101,13 @@ void LR::calculate_z() {
 
 double LR::sigmoid(double x){
     if(x < -30){
-	return 1e-6;
+        return 1e-6;
     }
     else if(x > 30){
- 	return 1.0;
+        return 1.0;
     }
     else{
-	double ex = pow(2.718281828, x);
+        double ex = pow(2.718281828, x);
         return ex / (1.0 + ex);
     }
 }
@@ -115,10 +120,10 @@ double LR::calculate_loss(double *para_w){
         for(int j = 0; j < data->fea_matrix[i].size(); j++){
             index = data->fea_matrix[i][j].idx;
             val = data->fea_matrix[i][j].val;
-  	    //std::cout<<*(para_w + index)<<std::endl;
+            //LOG(INFO) << *(para_w + index) << std::endl;
             wx += *(para_w + index) * val;//maybe add bias later
         }
-        //std::cout<<"wx: "<<sigmoid(wx)<<std::endl;
+        //LOG(INFO)<<"wx: "<<sigmoid(wx)<<std::endl;
         single_loss = data->label[i] * log(sigmoid(wx)) + (1 - data->label[i]) * log(1 - sigmoid(wx));
         f += single_loss;
     }
@@ -126,31 +131,19 @@ double LR::calculate_loss(double *para_w){
 }
 
 void LR::calculate_gradient(){
-    double f = 0.0;
-    int index;
+    int index, single_feature_num;
+    double value;
     int instance_num = data->fea_matrix.size();
-    //std::cout<<"rank"<<rank<<"instance dim"<<instance_num<<std::endl;
+    LOG(INFO) << "process " << rank << ", instance num " << instance_num << std::endl;
     for(int i = 0; i < instance_num; i++){
-        double wx = 0.0, value = 0.0;
-        int single_feature_num = data->fea_matrix[i].size();
-        //std::cout<<"rank"<<rank<<"instance dim"<<single_feature_num<<std::endl;
+        single_feature_num = data->fea_matrix[i].size();
         for(int j = 0; j < single_feature_num; j++){
             index = data->fea_matrix[i][j].idx;
             value = data->fea_matrix[i][j].val;
-            wx += *(glo_w + index) * value;
-        }
-        for(int j = 0; j < single_feature_num; j++){
-            index = data->fea_matrix[i][j].idx;
-            //std::cout<<index<<std::endl;
-            *(glo_g + index) += (sigmoid(wx) - data->label[i]) * value / (1.0 * instance_num);
-            //std::cout<<*(glo_g + index)<<std::endl;
+            loc_g[index] += (sigmoid(loc_z[i]) - 1.0) * data->label[i] * value;
+            DLOG(INFO) << "loc_g[" << index << "]: " << loc_g[index] << " after instance " << i + 1  << "/" << instance_num << " in rank " << rank <<std::endl << std::flush;
         }
     }
-    /*
-       for(int j = 0; j < data->fea_matrix[0].size(); j++){
-       index = data->fea_matrix[0][j].idx;
-       std::cout<<*(glo_g + index)<<std::endl;
-       }*/
 }
 
 void LR::calculate_subgradient(){
@@ -161,8 +154,8 @@ void LR::calculate_subgradient(){
     }
     else if(c != 0.0){
         for(int j = 0; j < data->glo_fea_dim; j++){
-            //std::cout<<*(glo_g + j)<<std::endl;
-            //std::cout<<*(glo_w + j)<<std::endl;
+            //LOG(INFO) << *(glo_g + j) << std::endl;
+            //LOG(INFO) << *(glo_w + j) << std::endl;
             if(*(glo_w + j) > 0){
                 *(glo_sub_g + j) = *(glo_g + j) + c;
             }
@@ -170,13 +163,13 @@ void LR::calculate_subgradient(){
                 *(glo_sub_g + j) = *(glo_g + j) - c;
             }
             else {
-                //std::cout<<*(glo_g + j) - c<<std::endl;
+                //LOG(INFO) << *(glo_g + j) - c << std::endl;
                 if(*(glo_g + j) - c > 0) *(glo_sub_g + j) = *(glo_g + j) - c;//左导数
                 else if(*(glo_g + j) + c < 0) *(glo_sub_g + j) = *(glo_g + j) + c;
                 else *(glo_sub_g + j) = 0;
             }
-            //std::cout<<*(glo_sub_g + j)<<std::endl;
-            //std::cout<<c<<std::endl;
+            //LOG(INFO) << *(glo_sub_g + j) << std::endl;
+            //LOG(INFO) << c <<std::endl;
         }
     }
 }
@@ -194,16 +187,16 @@ void LR::line_search(){
             *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
         }
         loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
-	//std::cout<<"masterid:"<<MASTER_ID<<std::endl;
-        //std::cout<<"before reduce rank:"<<rank<<" loc_new_loss:"<<loc_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
+        //LOG(INFO) << "masterid:" << MASTER_ID << std::endl;
+        //LOG(INFO) << "before reduce rank:" << rank <<" loc_new_loss:" << loc_new_loss << " glo_loss:" << glo_loss << std::endl;
         MPI_Allreduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        //std::cout<<"after reduce rank:"<<rank<<" glo_new_loss:"<<glo_new_loss<<" glo_loss:"<<glo_loss<<std::endl;
+        //LOG(INFO) << "after reduce rank:" << rank << " glo_new_loss:" << glo_new_loss << " glo_loss:" << glo_loss << std::endl;
         if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
             break;
         }
         lambda *= backoff;
-	//std::cout<<lambda<<std::endl;
-	if(lambda <= 1e-6) break;
+        //LOG(INFO) << lambda << std::endl;
+        if(lambda <= 1e-6) break;
     }
 }
 
@@ -260,15 +253,20 @@ bool LR::meet_criterion(){
 void LR::owlqn(){
     while(true){
         calculate_gradient(); //distributed, calculate gradient is distributed
+        LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
+        char a;
+        std::cin >> a;
         calculate_subgradient(); //not distributed, only on master process
+        LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
         two_loop();//not distributed, only on master process
+        LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
         fix_dir();//not distributed, orthant limited
+        LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
         line_search();//distributed, calculate loss is distributed
-	    std::cout<<"step "<<step<<std::endl;
         if(meet_criterion()) {//not distributed
             break;
         } else {
-            //std::cout<<rank<<":"<<step<<std::endl;
+            LOG(INFO) << "process " << rank << " step " << step << std::endl << std::flush;
             update_state();
         }
     }

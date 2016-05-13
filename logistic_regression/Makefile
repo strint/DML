@@ -1,19 +1,21 @@
 #!/bin/bash
 LIB = -L/opt/OpenBLAS/lib
 INCLUDE = -I/opt/OpenBLAS/include 
+GLOG_LIB = -L/usr/local/lib
+GLOG_INCLUDE = -I/usr/local/include/glog
 #train code
 CPP_tag = -std=gnu++11
 train:lr_main.o owlqn.o load_data.o 
-	mpicxx $(CPP_tag) -o train lr_main.o owlqn.o load_data.o $(LIB)  -lopenblas -lpthread
+	mpicxx $(CPP_tag) -o train lr_main.o owlqn.o load_data.o $(LIB) $(GLOG_LIB) -lopenblas -lpthread -lglog
 
 lr_main.o: src/lr_main.cpp 
-	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/lr_main.cpp
+	mpicxx $(CPP_tag) $(INCLUDE) $(GLOG_INCLUDE) -I ./include -c src/lr_main.cpp
 
 load_data.o: src/load_data.cpp
-	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/load_data.cpp
+	mpicxx $(CPP_tag) $(INCLUDE) $(GLOG_INCLUDE) -I ./include -c src/load_data.cpp
 
 owlqn.o: src/owlqn.cpp  
-	mpicxx $(CPP_tag) $(INCLUDE) -I ./include -c src/owlqn.cpp
+	mpicxx $(CPP_tag) $(INCLUDE) $(GLOG_INCLUDE) -I ./include -c src/owlqn.cpp
 
 #predict code
 predict: predict.o
