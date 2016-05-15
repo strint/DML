@@ -270,9 +270,10 @@ void LR::owlqn(){
         LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
         two_loop();//not distributed, only on master process
         LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
-        fix_dir();//not distributed, orthant limited
+        fix_dir_glo_q();//not distributed, orthant limited
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
         line_search();//distributed, calculate loss is distributed
+	fix_dir_glo_new_w();
         if(meet_criterion()) {//not distributed
             break;
         } else {
