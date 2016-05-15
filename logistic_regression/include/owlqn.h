@@ -38,7 +38,7 @@ private:
     double* glo_new_w; //model paramter after line search
 
     // loc_z for each instance in one process 
-    double* loc_z; //z = yi*WXi, z is input for sigmoid(z)
+    double* loc_z; //z = W*Xi, z is input for sigmoid(z)
 
     //gradient
     double* loc_g; //gradient of loss function compute by data on this process
@@ -77,7 +77,8 @@ private:
     void calculate_gradient();
     void calculate_subgradient();
     void two_loop();
-    void fix_dir();
+    void fix_dir_glo_q();
+    void fix_dir_glo_new_w();
     void line_search();
     bool meet_criterion();
     void update_state();

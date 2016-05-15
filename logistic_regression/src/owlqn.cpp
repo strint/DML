@@ -95,7 +95,6 @@ void LR::calculate_z() {
             val = data->fea_matrix[i][j].val;
             loc_z[i] += glo_w[idx] * val;
         }
-        loc_z[i] *= data->label[i];
     }
 }
 
@@ -174,7 +173,18 @@ void LR::calculate_subgradient(){
     }
 }
 
-void LR::fix_dir(){
+void LR::fix_dir_glo_q(){
+    for(int j = 0; j < glo_fea_dim; ++j){
+	if(*(glo_q + j) * *(glo_w +j) >= 0){
+   	    *(glo_q + j) = 0.0;
+        }
+	else{
+	    glo_q[j] = glo_q[j]; 
+	}
+    }
+}
+
+void LR::fix_dir_glo_new_w(){
     for(int j = 0; j < data->glo_fea_dim; j++){
         if(*(glo_new_w + j) * *(glo_w + j) >=0) *(glo_new_w + j) = 0.0;
         else *(glo_new_w + j) = *(glo_new_w + j);
