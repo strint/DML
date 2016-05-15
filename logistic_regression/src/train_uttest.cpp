@@ -1,6 +1,6 @@
-#include "../include/lr.h"
+#include "../include/owlqn.h"
 #include <vector>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 class TrainTest: public testing::Test
 {
