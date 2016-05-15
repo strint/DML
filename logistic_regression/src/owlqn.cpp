@@ -174,7 +174,7 @@ void LR::calculate_subgradient(){
 }
 
 void LR::fix_dir_glo_q(){
-    for(int j = 0; j < glo_fea_dim; ++j){
+    for(int j = 0; j < data->glo_fea_dim; ++j){
 	if(*(glo_q + j) * *(glo_w +j) >= 0){
    	    *(glo_q + j) = 0.0;
         }
