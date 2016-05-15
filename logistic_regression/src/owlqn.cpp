@@ -230,6 +230,10 @@ void LR::two_loop(){
 }
 
 void LR::update_state(){
+
+     //update lbfgs memory
+    update_memory();//not distributed
+
     //update w
     std::swap(glo_w, glo_new_w); 
 
@@ -238,9 +242,6 @@ void LR::update_state(){
 
     //update z
     calculate_z();
-
-    //update lbfgs memory
-    update_memory();//not distributed
 
     //update step count
     step++;
