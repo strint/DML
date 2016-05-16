@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "owlqn.h"
 #include <glog/logging.h>
+#include <time.h>
 
 extern "C"{
 #include <cblas.h>
@@ -175,12 +176,12 @@ void LR::calculate_subgradient(){
 
 void LR::fix_dir_glo_q(){
     for(int j = 0; j < data->glo_fea_dim; ++j){
-	if(*(glo_q + j) * *(glo_w +j) >= 0){
-   	    *(glo_q + j) = 0.0;
+        if(*(glo_q + j) * *(glo_w +j) >= 0){
+            *(glo_q + j) = 0.0;
         }
-	else{
-	    glo_q[j] = glo_q[j]; 
-	}
+        else{
+            glo_q[j] = glo_q[j]; 
+        }
     }
 }
 
@@ -231,7 +232,7 @@ void LR::two_loop(){
 
 void LR::update_state(){
 
-     //update lbfgs memory
+    //update lbfgs memory
     update_memory();//not distributed
 
     //update w
@@ -257,29 +258,49 @@ void LR::update_memory(){
 }
 
 bool LR::meet_criterion(){
-    if(step == 3) return true;
+    if(step == 0) return true;
     return false;
+}
+
+void LR::save_model(){
+    if(0 == rank) {
+        time_t rawtime;
+        struct tm * timeinfo;
+        char buffer [80];
+        time (&rawtime);
+        timeinfo = localtime(&rawtime);
+        strftime(buffer, 80, "%Y%m%d_%H%M%S", timeinfo);
+        std::string time_s = buffer;
+
+        std::ofstream md;
+        md.open("./model/lr_model_" + time_s + ".txt");
+        double wi = 0.0;
+        for(int i = 0; i < data->glo_fea_dim; ++i) {
+            wi = glo_new_w[i];
+            md << i << ':' << wi << ' ';
+        }
+        md.close();
+    }
 }
 
 void LR::owlqn(){
     while(true){
         calculate_gradient(); //distributed, calculate gradient is distributed
         LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
-        char a;
-        std::cin >> a;
-        calculate_subgradient(); //not distributed, only on master process
+        //calculate_subgradient(); //not distributed, only on master process
         LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
-        two_loop();//not distributed, only on master process
+        //two_loop();//not distributed, only on master process
         LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
-        fix_dir_glo_q();//not distributed, orthant limited
+        //fix_dir_glo_q();//not distributed, orthant limited
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
-        line_search();//distributed, calculate loss is distributed
-	fix_dir_glo_new_w();
+        //line_search();//distributed, calculate loss is distributed
+        //fix_dir_glo_new_w();
         if(meet_criterion()) {//not distributed
+            save_model();
             break;
         } else {
             LOG(INFO) << "process " << rank << " step " << step << std::endl << std::flush;
-            update_state();
+            //update_state();
         }
     }
 }

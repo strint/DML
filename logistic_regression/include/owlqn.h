@@ -81,6 +81,7 @@ private:
     void fix_dir_glo_new_w();
     void line_search();
     bool meet_criterion();
+    void save_model();
     void update_state();
 
     void calculate_z();
