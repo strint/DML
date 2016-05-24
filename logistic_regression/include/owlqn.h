@@ -69,7 +69,8 @@ private:
     //line search
     double lambda; //learn rate in line search
     double backoff; //back rate in line search
-
+    
+    float gaussrand();
     void init();
 
     void owlqn();
