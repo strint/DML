@@ -1,6 +1,7 @@
 #include <string>
 #include "load_data.h"
 #include "owlqn.h"
+#include "predict.h"
 #include "mpi.h"
 //#include "gtest/gtest.h"
 #include <glog/logging.h>
@@ -31,6 +32,11 @@ int main(int argc,char* argv[]){
 
     LR lr(&ld, nproc, rank);
     lr.run();
+    std::vector<float> model;
+    for(int j = 0; j < ld.glo_fea_dim; j++)
+	model.push_back(lr.glo_w[j]);
+    Predict p;
+    p.predict(test_data_path, model);
 
     MPI::Finalize();
     return 0;
