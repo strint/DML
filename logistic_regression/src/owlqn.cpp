@@ -62,7 +62,7 @@ void LR::init(){
     glo_q = new double[data->glo_fea_dim]();
 
     m = 10;
-    now_m = 0;
+    now_m = 1;
     glo_s_list = new double*[m];
     for(int i = 0; i < m; i++){
         glo_s_list[i] = new double[data->glo_fea_dim]();
@@ -181,6 +181,11 @@ void LR::calculate_subgradient(){
             //LOG(INFO) << c <<std::endl;
         }
     }
+    /*
+    for(int i = 0; i < data->glo_fea_dim; i++){
+	if(rank == 0)
+	std::cout<<"glo_sub_g["<<i<<"]: "<<glo_sub_g[i]<<" in rank:" <<rank<<std::endl;
+    }*/
 }
 
 void LR::fix_dir_glo_q(){
@@ -222,9 +227,16 @@ void LR::line_search(){
 
 void LR::two_loop(){
     cblas_dcopy(data->glo_fea_dim, glo_sub_g, 1, glo_q, 1);
+    /*for(int i = 0; i < data->glo_fea_dim; i++){
+	if(rank == 0) std::cout<<glo_q[i]<<std::endl;
+    }*/
     if(now_m > m) now_m = m; 
     for(int loop = now_m-1; loop >= 0; --loop){
         glo_ro_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
+	for(int i = 0; i < data->glo_fea_dim; i++){
+	    if(rank == 0) std::cout<<glo_s_list[i]<<std::endl;
+   	}
+	return;
         glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / glo_ro_list[loop];
         cblas_daxpy(data->glo_fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
     }
@@ -276,8 +288,10 @@ void LR::owlqn(){
         calculate_gradient(); //distributed, calculate gradient is distributed
         LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
         calculate_subgradient(); //not distributed, only on master process
+ 	//std::cout<<"-------------------------------------------"<<std::endl;
         LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
         two_loop();//not distributed, only on master process
+return;
         LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
         fix_dir_glo_q();//not distributed, orthant limited
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
