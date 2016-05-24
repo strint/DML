@@ -241,17 +241,29 @@ void LR::two_loop(){
 	    std::cout<<std::endl;
         }*/
         glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / (glo_ro_list[loop] + 1.0);
+        //std::cout<<glo_alpha_list[loop]<<std::endl;
         cblas_daxpy(data->glo_fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
+	/*for(int i = 0; i < data->glo_fea_dim; i++){
+            if(rank == 0) std::cout<<glo_q[i]<<std::endl;
+        }*/
     }
+    //std::cout<<step<<std::endl;
     if(step != 0){
         double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
         float gamma = glo_ro_list[step%now_m - 1]/ydoty;
         cblas_dscal(data->glo_fea_dim, gamma, (double*)glo_q, 1);
     }
+    //std::cout<<step<<std::endl;
     for(int loop = 0; loop < now_m; ++loop){
-        double beta = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/glo_ro_list[loop];
+        double beta = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/(glo_ro_list[loop] + 1.0);
+	//std::cout<<"beta "<<beta<<std::endl;
         cblas_daxpy(data->glo_fea_dim, glo_alpha_list[loop] - beta, &(*glo_s_list)[loop], 1, (double*)glo_q, 1);
     }
+    /*
+    for(int i = 0; i < data->glo_fea_dim; i++){
+        if(rank == 0) std::cout<<glo_q[i]<<std::endl;
+    }
+    */
 }
 
 void LR::update_state(){
