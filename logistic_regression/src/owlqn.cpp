@@ -233,11 +233,14 @@ void LR::two_loop(){
     if(now_m > m) now_m = m; 
     for(int loop = now_m-1; loop >= 0; --loop){
         glo_ro_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
-	for(int i = 0; i < data->glo_fea_dim; i++){
-	    if(rank == 0) std::cout<<glo_s_list[i]<<std::endl;
-   	}
-	return;
-        glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / glo_ro_list[loop];
+	/*
+	for(int i = 0; i < now_m; i++){
+            for(int j = 0; j < data->glo_fea_dim; j++){
+	        if(rank == 0) std::cout<<"glo_s_list["<<i<<"] = "<<glo_s_list[i][j]<<" ";
+   	    }
+	    std::cout<<std::endl;
+        }*/
+        glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / (glo_ro_list[loop] + 1.0);
         cblas_daxpy(data->glo_fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
     }
     if(step != 0){
