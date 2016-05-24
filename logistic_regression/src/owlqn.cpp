@@ -4,6 +4,10 @@
 #include <algorithm>
 #include "owlqn.h"
 #include <glog/logging.h>
+#include <cstdlib>
+#include <ctime>
+
+#define NUM 999
 
 extern "C"{
 #include <cblas.h>
@@ -11,8 +15,9 @@ extern "C"{
 
 LR::LR(Load_Data* ld, int total_num_proc, int my_rank) 
     : data(ld), num_proc(total_num_proc), rank(my_rank) {
-        init();
-    }
+
+    init();
+}
 
 LR::~LR(){
     delete[] glo_w; 
@@ -40,13 +45,15 @@ LR::~LR(){
     delete[] glo_ro_list;
 }
 
+
 void LR::init(){
     c = 1.0;
 
     glo_w = new double[data->glo_fea_dim]();
     glo_new_w = new double[data->glo_fea_dim]();
+    srand(time(NULL));
     for(int i = 0; i < data->glo_fea_dim; i++) {
-        glo_w[i] = 1;
+        glo_w[i] = rand() % (NUM+1) / (float)(NUM+1);
     }
 
     loc_z = new double[data->loc_ins_num]();
@@ -248,6 +255,7 @@ void LR::two_loop(){
 	if(rank == 0) std::cout<<glo_q[i]<<std::endl;
     }*/
     if(now_m > m) now_m = m; 
+    std::cout<<"now_m "<<now_m<<std::endl;
     for(int loop = now_m-1; loop >= 0; --loop){
         glo_ro_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
 	/*
@@ -266,8 +274,8 @@ void LR::two_loop(){
     }
     //std::cout<<step<<std::endl;
     if(step != 0){
-        double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
-        float gamma = glo_ro_list[step%now_m - 1]/ydoty;
+        double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[now_m - 1], 1, glo_y_list[now_m - 1], 1);
+        float gamma = glo_ro_list[now_m - 1]/ydoty;
         cblas_dscal(data->glo_fea_dim, gamma, (double*)glo_q, 1);
     }
     //std::cout<<step<<std::endl;
@@ -311,7 +319,7 @@ void LR::update_memory(){
 }
 
 bool LR::meet_criterion(){
-    if(step == 3) return true;
+    if(step == 30) return true;
     return false;
 }
 
@@ -328,13 +336,17 @@ void LR::owlqn(){
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
         line_search();//distributed, calculate loss is distributed
 	fix_dir_glo_new_w();
+        std::cout<<step<<std::endl;
         if(meet_criterion()) {//not distributed
-	    std::cout<<step<<std::endl;
+	    //std::cout<<step<<std::endl;
             break;
         } else {
             LOG(INFO) << "process " << rank << " step " << step << std::endl << std::flush;
             update_state();
         }
+    }
+    for(int j = 0; j < data->glo_fea_dim; j++){
+	std::cout<<"glow["<<j<<"] "<<glo_w[j]<<std::endl;
     }
 }
 
