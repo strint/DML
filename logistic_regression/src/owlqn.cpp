@@ -189,14 +189,23 @@ void LR::calculate_subgradient(){
 }
 
 void LR::fix_dir_glo_q(){
+    /*for(int j = 0; j < data->glo_fea_dim; j++){
+	//if(rank == 0) std::cout<<"glo_q["<<j<<"]"<<glo_q[j]<<std::endl;
+	if(rank == 0) std::cout<<"glo_sub_g["<<j<<"]"<<glo_sub_g[j]<<std::endl;
+    }*/
     for(int j = 0; j < data->glo_fea_dim; ++j){
-	if(*(glo_q + j) * *(glo_w +j) >= 0){
+	if(*(glo_q + j) * *(glo_sub_g +j) >= 0){
    	    *(glo_q + j) = 0.0;
         }
 	else{
 	    glo_q[j] = glo_q[j]; 
 	}
     }
+    /*
+    for(int j = 0; j < data->glo_fea_dim; ++j){
+	std::cout<<"glo_q["<<j<<"]: "<<glo_q[j]<<std::endl;
+    }
+    */
 }
 
 void LR::fix_dir_glo_new_w(){
@@ -306,9 +315,9 @@ void LR::owlqn(){
  	//std::cout<<"-------------------------------------------"<<std::endl;
         LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
         two_loop();//not distributed, only on master process
-return;
         LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
         fix_dir_glo_q();//not distributed, orthant limited
+	return;
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
         line_search();//distributed, calculate loss is distributed
 	fix_dir_glo_new_w();
