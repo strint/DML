@@ -139,7 +139,7 @@ void LR::calculate_gradient(){
         for(int j = 0; j < single_feature_num; j++){
             index = data->fea_matrix[i][j].idx;
             value = data->fea_matrix[i][j].val;
-            loc_g[index] += (sigmoid(loc_z[i]) - 1.0) * data->label[i] * value;
+            loc_g[index] += (sigmoid(loc_z[i]) - data->label[i]) * value;
             DLOG(INFO) << "loc_g[" << index << "]: " << loc_g[index] << " after instance " << i + 1  << "/" << instance_num << " in rank " << rank <<std::endl << std::flush;
         }
     }
