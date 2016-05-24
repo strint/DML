@@ -265,8 +265,6 @@ void LR::owlqn(){
     while(true){
         calculate_gradient(); //distributed, calculate gradient is distributed
         LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
-        char a;
-        std::cin >> a;
         calculate_subgradient(); //not distributed, only on master process
         LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
         two_loop();//not distributed, only on master process
