@@ -66,10 +66,16 @@ void LR::init(){
     glo_s_list = new double*[m];
     for(int i = 0; i < m; i++){
         glo_s_list[i] = new double[data->glo_fea_dim]();
+	for(int j = 0; j < data->glo_fea_dim; j++){
+	    glo_s_list[i][j] = glo_w[j];
+	}
     }
     glo_y_list = new double*[m];
     for(int i = 0; i < m; i++){
         glo_y_list[i] = new double[data->glo_fea_dim]();
+	for(int j = 0; j < data->glo_fea_dim; j++){
+            glo_y_list[i][j] = glo_g[j];
+        }
     }
     glo_alpha_list = new double[data->glo_fea_dim]();
     glo_ro_list = new double[data->glo_fea_dim](); 
@@ -189,10 +195,12 @@ void LR::calculate_subgradient(){
 }
 
 void LR::fix_dir_glo_q(){
-    /*for(int j = 0; j < data->glo_fea_dim; j++){
+    /*
+    for(int j = 0; j < data->glo_fea_dim; j++){
 	//if(rank == 0) std::cout<<"glo_q["<<j<<"]"<<glo_q[j]<<std::endl;
 	if(rank == 0) std::cout<<"glo_sub_g["<<j<<"]"<<glo_sub_g[j]<<std::endl;
-    }*/
+    }
+    */
     for(int j = 0; j < data->glo_fea_dim; ++j){
 	if(*(glo_q + j) * *(glo_sub_g +j) >= 0){
    	    *(glo_q + j) = 0.0;
@@ -317,11 +325,11 @@ void LR::owlqn(){
         two_loop();//not distributed, only on master process
         LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
         fix_dir_glo_q();//not distributed, orthant limited
-	return;
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
         line_search();//distributed, calculate loss is distributed
 	fix_dir_glo_new_w();
         if(meet_criterion()) {//not distributed
+	    std::cout<<step<<std::endl;
             break;
         } else {
             LOG(INFO) << "process " << rank << " step " << step << std::endl << std::flush;
