@@ -74,7 +74,8 @@ void LR::init(){
     glo_new_w = new double[data->glo_fea_dim]();
     srand(time(NULL));
     for(int i = 0; i < data->glo_fea_dim; i++) {
-        glo_w[i] = gaussrand();
+        //glo_w[i] = gaussrand();
+	glo_w[i] = 0.0;
     }
 
     loc_z = new double[data->loc_ins_num]();
@@ -167,14 +168,14 @@ void LR::calculate_gradient(){
     int index, single_feature_num;
     double value;
     int instance_num = data->fea_matrix.size();
-    LOG(INFO) << "process " << rank << ", instance num " << instance_num << std::endl;
+    //LOG(INFO) << "process " << rank << ", instance num " << instance_num << std::endl;
     for(int i = 0; i < instance_num; i++){
         single_feature_num = data->fea_matrix[i].size();
         for(int j = 0; j < single_feature_num; j++){
             index = data->fea_matrix[i][j].idx;
             value = data->fea_matrix[i][j].val;
             loc_g[index] += (sigmoid(loc_z[i]) - data->label[i]) * value;
-            DLOG(INFO) << "loc_g[" << index << "]: " << loc_g[index] << " after instance " << i + 1  << "/" << instance_num << " in rank " << rank << " on step " << step << std::endl << std::flush;
+            //DLOG(INFO) << "loc_g[" << index << "]: " << loc_g[index] << " after instance " << i + 1  << "/" << instance_num << " in rank " << rank <<std::endl << std::flush;
         }
 	/*
 	if(i == instance_num - 1){
@@ -365,14 +366,14 @@ void LR::save_model(){
 void LR::owlqn(){
     while(true){
         calculate_gradient(); //distributed, calculate gradient is distributed
-        LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
+        //LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
         calculate_subgradient(); //not distributed, only on master process
- 	    //std::cout<<"-------------------------------------------"<<std::endl;
-        LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
-        //two_loop();//not distributed, only on master process
-        LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
-        //fix_dir_glo_q();//not distributed, orthant limited
-        LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
+ 	//std::cout<<"-------------------------------------------"<<std::endl;
+        //LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
+        two_loop();//not distributed, only on master process
+        //LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
+        fix_dir_glo_q();//not distributed, orthant limited
+        //LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
         line_search();//distributed, calculate loss is distributed
 	    fix_dir_glo_new_w();
         //std::cout<<step<<std::endl;

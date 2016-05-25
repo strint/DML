@@ -6,5 +6,5 @@
 #mv *.log backup/"$tt"
 #mv core backup/"$tt"
 #make
-rm log/*
+#rm log/*
 mpirun -np 4 ./train ./data/agaricus.txt.train ./data/agaricus.txt.test
