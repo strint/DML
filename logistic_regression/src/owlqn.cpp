@@ -4,7 +4,10 @@
 #include <algorithm>
 #include "owlqn.h"
 #include <glog/logging.h>
-#include <time.h>
+#include <cstdlib>
+#include <ctime>
+
+#define NUM 999
 
 extern "C"{
 #include <cblas.h>
@@ -12,8 +15,9 @@ extern "C"{
 
 LR::LR(Load_Data* ld, int total_num_proc, int my_rank) 
     : data(ld), num_proc(total_num_proc), rank(my_rank) {
-        init();
-    }
+
+    init();
+}
 
 LR::~LR(){
     delete[] glo_w; 
@@ -41,13 +45,36 @@ LR::~LR(){
     delete[] glo_ro_list;
 }
 
+float LR::gaussrand(){
+    static double V1, V2, S;
+    static int phase = 0;
+    double X;
+    if(phase ==0){
+        do{
+            double U1 = (double)rand() / RAND_MAX;
+            double U2 = (double)rand() / RAND_MAX;
+
+            V1 = 2 * U1 - 1;
+            V2 = 2 * U2 - 1;
+            S = V1 * V1 + V2 * V2;
+        } while(S >= 1 || S == 0);
+        X = V1 * sqrt(-2 * log(S) / S);
+    }
+    else{
+        X = V2 * sqrt(-2 * log(S) / S);
+    }
+    phase = 1 - phase;
+    return X;
+}
+
 void LR::init(){
     c = 1.0;
 
     glo_w = new double[data->glo_fea_dim]();
     glo_new_w = new double[data->glo_fea_dim]();
+    srand(time(NULL));
     for(int i = 0; i < data->glo_fea_dim; i++) {
-        glo_w[i] = 1;
+        glo_w[i] = gaussrand();
     }
 
     loc_z = new double[data->loc_ins_num]();
@@ -63,14 +90,20 @@ void LR::init(){
     glo_q = new double[data->glo_fea_dim]();
 
     m = 10;
-    now_m = 0;
+    now_m = 1;
     glo_s_list = new double*[m];
     for(int i = 0; i < m; i++){
         glo_s_list[i] = new double[data->glo_fea_dim]();
+	for(int j = 0; j < data->glo_fea_dim; j++){
+	    glo_s_list[i][j] = glo_w[j];
+	}
     }
     glo_y_list = new double*[m];
     for(int i = 0; i < m; i++){
         glo_y_list[i] = new double[data->glo_fea_dim]();
+	for(int j = 0; j < data->glo_fea_dim; j++){
+            glo_y_list[i][j] = glo_g[j];
+        }
     }
     glo_alpha_list = new double[data->glo_fea_dim]();
     glo_ro_list = new double[data->glo_fea_dim](); 
@@ -140,9 +173,19 @@ void LR::calculate_gradient(){
         for(int j = 0; j < single_feature_num; j++){
             index = data->fea_matrix[i][j].idx;
             value = data->fea_matrix[i][j].val;
-            loc_g[index] += (sigmoid(loc_z[i]) - 1.0) * data->label[i] * value;
-            DLOG(INFO) << "loc_g[" << index << "]: " << loc_g[index] << " after instance " << i + 1  << "/" << instance_num << " in rank " << rank <<std::endl << std::flush;
+            loc_g[index] += (sigmoid(loc_z[i]) - data->label[i]) * value;
+            DLOG(INFO) << "loc_g[" << index << "]: " << loc_g[index] << " after instance " << i + 1  << "/" << instance_num << " in rank " << rank << " on step " << step << std::endl << std::flush;
         }
+	/*
+	if(i == instance_num - 1){
+	    for(int index = 0; index < data->glo_fea_dim; index++)
+	    std::cout<< "loc_g[" << index << "]: " << loc_g[index] << " after instance " << i + 1  << "/" << instance_num << " in rank " << rank <<std::endl << std::flush;
+	
+	}*/
+    }
+    for(int index = 0; index < data->glo_fea_dim; index++){
+	glo_g[index] = loc_g[index] / instance_num;
+	//std::cout<< "glo_g[" << index << "]: " << glo_g[index] << " after normal " << "in rank " << rank <<std::endl << std::flush;	
     }
 }
 
@@ -172,17 +215,30 @@ void LR::calculate_subgradient(){
             //LOG(INFO) << c <<std::endl;
         }
     }
+    /*
+    for(int i = 0; i < data->glo_fea_dim; i++){
+	if(rank == 0)
+	std::cout<<"glo_sub_g["<<i<<"]: "<<glo_sub_g[i]<<" in rank:" <<rank<<std::endl;
+    }*/
 }
 
 void LR::fix_dir_glo_q(){
+    /*
+    for(int j = 0; j < data->glo_fea_dim; j++){
+	//if(rank == 0) std::cout<<"glo_q["<<j<<"]"<<glo_q[j]<<std::endl;
+	if(rank == 0) std::cout<<"glo_sub_g["<<j<<"]"<<glo_sub_g[j]<<std::endl;
+    }
+    */
     for(int j = 0; j < data->glo_fea_dim; ++j){
-        if(*(glo_q + j) * *(glo_w +j) >= 0){
-            *(glo_q + j) = 0.0;
-        }
-        else{
-            glo_q[j] = glo_q[j]; 
+	if(*(glo_q + j) * *(glo_sub_g +j) >= 0){
+   	    *(glo_q + j) = 0.0;
         }
     }
+    /*
+    for(int j = 0; j < data->glo_fea_dim; ++j){
+	std::cout<<"glo_q["<<j<<"]: "<<glo_q[j]<<std::endl;
+    }
+    */
 }
 
 void LR::fix_dir_glo_new_w(){
@@ -213,21 +269,44 @@ void LR::line_search(){
 
 void LR::two_loop(){
     cblas_dcopy(data->glo_fea_dim, glo_sub_g, 1, glo_q, 1);
+    /*for(int i = 0; i < data->glo_fea_dim; i++){
+	if(rank == 0) std::cout<<glo_q[i]<<std::endl;
+    }*/
     if(now_m > m) now_m = m; 
+    std::cout<<"now_m "<<now_m<<std::endl;
     for(int loop = now_m-1; loop >= 0; --loop){
         glo_ro_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
-        glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / glo_ro_list[loop];
+	/*
+	for(int i = 0; i < now_m; i++){
+            for(int j = 0; j < data->glo_fea_dim; j++){
+	        if(rank == 0) std::cout<<"glo_s_list["<<i<<"] = "<<glo_s_list[i][j]<<" ";
+   	    }
+	    std::cout<<std::endl;
+        }*/
+        glo_alpha_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_s_list)[loop], 1, (double*)glo_q, 1) / (glo_ro_list[loop] + 1.0);
+        //std::cout<<glo_alpha_list[loop]<<std::endl;
         cblas_daxpy(data->glo_fea_dim, -1 * glo_alpha_list[loop], &(*glo_y_list)[loop], 1, (double*)glo_q, 1);
+	/*for(int i = 0; i < data->glo_fea_dim; i++){
+            if(rank == 0) std::cout<<glo_q[i]<<std::endl;
+        }*/
     }
+    //std::cout<<step<<std::endl;
     if(step != 0){
-        double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[step%now_m - 1], 1, glo_y_list[step%now_m - 1], 1);
-        float gamma = glo_ro_list[step%now_m - 1]/ydoty;
+        double ydoty = cblas_ddot(data->glo_fea_dim, glo_s_list[now_m - 1], 1, glo_y_list[now_m - 1], 1);
+        float gamma = glo_ro_list[now_m - 1]/ydoty;
         cblas_dscal(data->glo_fea_dim, gamma, (double*)glo_q, 1);
     }
+    //std::cout<<step<<std::endl;
     for(int loop = 0; loop < now_m; ++loop){
-        double beta = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/glo_ro_list[loop];
+        double beta = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, (double*)glo_q, 1)/(glo_ro_list[loop] + 1.0);
+	//std::cout<<"beta "<<beta<<std::endl;
         cblas_daxpy(data->glo_fea_dim, glo_alpha_list[loop] - beta, &(*glo_s_list)[loop], 1, (double*)glo_q, 1);
     }
+    /*
+    for(int i = 0; i < data->glo_fea_dim; i++){
+        if(rank == 0) std::cout<<glo_q[i]<<std::endl;
+    }
+    */
 }
 
 void LR::update_state(){
@@ -258,7 +337,7 @@ void LR::update_memory(){
 }
 
 bool LR::meet_criterion(){
-    if(step == 0) return true;
+    if(step == 5) return true;
     return false;
 }
 
@@ -287,21 +366,28 @@ void LR::owlqn(){
     while(true){
         calculate_gradient(); //distributed, calculate gradient is distributed
         LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
-        //calculate_subgradient(); //not distributed, only on master process
+        calculate_subgradient(); //not distributed, only on master process
+ 	    //std::cout<<"-------------------------------------------"<<std::endl;
         LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
         //two_loop();//not distributed, only on master process
         LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
         //fix_dir_glo_q();//not distributed, orthant limited
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
-        //line_search();//distributed, calculate loss is distributed
-        //fix_dir_glo_new_w();
+        line_search();//distributed, calculate loss is distributed
+	    fix_dir_glo_new_w();
+        std::cout<<step<<std::endl;
         if(meet_criterion()) {//not distributed
             save_model();
+	        //std::cout<<step<<std::endl;
             break;
         } else {
             LOG(INFO) << "process " << rank << " step " << step << std::endl << std::flush;
+            LOG(INFO) << "======================================" << std::endl << std::flush;
             //update_state();
         }
+    }
+    for(int j = 0; j < data->glo_fea_dim; j++){
+	    std::cout<<"glow["<<j<<"] "<<glo_w[j]<<std::endl;
     }
 }
 

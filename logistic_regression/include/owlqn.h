@@ -18,6 +18,7 @@ public:
     LR(Load_Data* data, int total_num_proc, int my_rank);
     ~LR();
     void run();
+    double* glo_w; //global model parameter
 
 private:
     //training data
@@ -34,7 +35,7 @@ private:
     double c; //l1 norm parameter
 
     //parameter
-    double* glo_w; //global model parameter
+    //double* glo_w; //global model parameter
     double* glo_new_w; //model paramter after line search
 
     // loc_z for each instance in one process 
@@ -69,7 +70,8 @@ private:
     //line search
     double lambda; //learn rate in line search
     double backoff; //back rate in line search
-
+    
+    float gaussrand();
     void init();
 
     void owlqn();
