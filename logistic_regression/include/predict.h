@@ -4,15 +4,20 @@
 #include <string>
 #include <vector>
 #include <math.h>
+#include "load_data.h"
+
 class Predict{
 
 public:
-    Predict();
+    Predict(Load_Data* data, int total_num_proc, int my_rank);
     ~Predict();
 
-    void predict(const char*, std::vector<float>&);
-    std::vector<std::string> split_line(const std::string&);
-     
+    void predict(std::vector<float>);
+    Load_Data* data;
+
+    //MPI process info
+    int num_proc; // total num of process in MPI comm world
+    int rank; // my process rank in MPT comm world 
 
 };
 #endif

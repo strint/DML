@@ -35,8 +35,12 @@ int main(int argc,char* argv[]){
     std::vector<float> model;
     for(int j = 0; j < ld.glo_fea_dim; j++)
 	model.push_back(lr.glo_w[j]);
-    Predict p;
-    p.predict(test_data_path, model);
+
+    Load_Data testdata;
+    testdata.load_data(test_data_path, split_tag, rank, nproc);
+    //std::cout<<testdata.fea_matrix.size()<<std::endl;
+    Predict p(&testdata, nproc, rank);
+    p.predict(model);
 
     MPI::Finalize();
     return 0;

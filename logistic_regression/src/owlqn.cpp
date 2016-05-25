@@ -276,7 +276,7 @@ void LR::two_loop(){
 	if(rank == 0) std::cout<<glo_q[i]<<std::endl;
     }*/
     if(now_m > m) now_m = m; 
-    std::cout<<"now_m "<<now_m<<std::endl;
+    //std::cout<<"now_m "<<now_m<<std::endl;
     for(int loop = now_m-1; loop >= 0; --loop){
         glo_ro_list[loop] = cblas_ddot(data->glo_fea_dim, &(*glo_y_list)[loop], 1, &(*glo_s_list)[loop], 1);
 	/*
@@ -340,7 +340,7 @@ void LR::update_memory(){
 }
 
 bool LR::meet_criterion(){
-    if(step == 30) return true;
+    if(step == 300) return true;
     return false;
 }
 
@@ -357,7 +357,7 @@ void LR::owlqn(){
         LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
         line_search();//distributed, calculate loss is distributed
 	fix_dir_glo_new_w();
-        std::cout<<step<<std::endl;
+        //std::cout<<step<<std::endl;
         if(meet_criterion()) {//not distributed
 	    //std::cout<<step<<std::endl;
             break;
@@ -366,9 +366,9 @@ void LR::owlqn(){
             update_state();
         }
     }
-    for(int j = 0; j < data->glo_fea_dim; j++){
+    /*for(int j = 0; j < data->glo_fea_dim; j++){
 	std::cout<<"glow["<<j<<"] "<<glo_w[j]<<std::endl;
-    }
+    }*/
 }
 
 void LR::run(){
