@@ -11,6 +11,7 @@
 #include <deque>
 #include <pthread.h>
 #include "load_data.h"
+#define MASTERID 0
 
 class LR{
 
@@ -27,6 +28,7 @@ private:
     //MPI process info
     int num_proc; // total num of process in MPI comm world
     int rank; // my process rank in MPT comm world
+    
 
     //iteration step
     size_t step;

@@ -184,10 +184,10 @@ void LR::calculate_gradient(){
 	
 	}*/
     }
-    for(int index = 0; index < data->glo_fea_dim; index++){
+    /*for(int index = 0; index < data->glo_fea_dim; index++){
 	glo_g[index] = loc_g[index] / instance_num;
 	//std::cout<< "glo_g[" << index << "]: " << glo_g[index] << " after normal " << "in rank " << rank <<std::endl << std::flush;	
-    }
+    }*/
 }
 
 void LR::calculate_subgradient(){
@@ -250,21 +250,43 @@ void LR::fix_dir_glo_new_w(){
 }
 
 void LR::line_search(){
+    MPI_Status status;
     while(true){
-        for(int j = 0; j < data->glo_fea_dim; j++){
-            *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
-        }
+	if(rank == MASTERID){
+            for(int j = 0; j < data->glo_fea_dim; j++){
+                *(glo_new_w + j) = *(glo_w + j) + lambda * *(glo_g + j);//local_g equal all nodes g
+            }
+	    for(int i = 1; i < num_proc; i++){
+	        MPI_Send(glo_new_w, data->glo_fea_dim, MPI_DOUBLE, i, 99, MPI_COMM_WORLD);
+	    }
+	}
+	else if(rank != MASTERID){
+	    for(int i = 1; i < num_proc; i++){
+	        MPI_Recv(glo_new_w, data->glo_fea_dim, MPI_DOUBLE, i, 99, MPI_COMM_WORLD, &status);
+	    }
+	}
         loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
-        //LOG(INFO) << "masterid:" << MASTER_ID << std::endl;
-        //LOG(INFO) << "before reduce rank:" << rank <<" loc_new_loss:" << loc_new_loss << " glo_loss:" << glo_loss << std::endl;
-        MPI_Allreduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        //LOG(INFO) << "after reduce rank:" << rank << " glo_new_loss:" << glo_new_loss << " glo_loss:" << glo_loss << std::endl;
-        if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
-            break;
+	if(rank != MASTERID){
+	    MPI_Send(&loc_new_loss, data->glo_fea_dim, MPI_FLOAT, 0, 9999, MPI_COMM_WORLD);
+ 	}
+	else if(rank == MASTERID){
+	    glo_new_loss += loc_new_loss;
+	    for(int i = 0; i < num_proc; i++){
+		MPI_Recv(&loc_new_loss, data->glo_fea_dim, MPI_FLOAT, i, 99, MPI_COMM_WORLD, &status);
+		glo_new_loss += loc_new_loss;
+	    }
+
+            //LOG(INFO) << "masterid:" << MASTER_ID << std::endl;
+            //LOG(INFO) << "before reduce rank:" << rank <<" loc_new_loss:" << loc_new_loss << " glo_loss:" << glo_loss << std::endl;
+            //MPI_Allreduce(&loc_new_loss, &glo_new_loss, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            //LOG(INFO) << "after reduce rank:" << rank << " glo_new_loss:" << glo_new_loss << " glo_loss:" << glo_loss << std::endl;
+            if(glo_new_loss <= glo_loss + lambda * cblas_ddot(data->glo_fea_dim, (double*)glo_sub_g, 1, (double*)glo_g, 1)){
+                break;
+            }
+            lambda *= backoff;
+            //LOG(INFO) << lambda << std::endl;
+            if(lambda <= 1e-6) break;
         }
-        lambda *= backoff;
-        //LOG(INFO) << lambda << std::endl;
-        if(lambda <= 1e-6) break;
     }
 }
 
@@ -365,17 +387,35 @@ void LR::save_model(){
 
 void LR::owlqn(){
     while(true){
+	MPI_Status status;
         calculate_gradient(); //distributed, calculate gradient is distributed
-        //LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
-        calculate_subgradient(); //not distributed, only on master process
- 	//std::cout<<"-------------------------------------------"<<std::endl;
-        //LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
-        two_loop();//not distributed, only on master process
-        //LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
-        fix_dir_glo_q();//not distributed, orthant limited
-        //LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
+	if(rank != 0){
+	    MPI_Send(loc_g, data->glo_fea_dim, MPI_DOUBLE, MASTERID, 99, MPI_COMM_WORLD);
+	}
+	else if(rank == MASTERID){
+	    for(int i = 1; i < num_proc; i++){
+	    	MPI_Recv(glo_g, data->glo_fea_dim, MPI_DOUBLE, i, 99, MPI_COMM_WORLD, &status);
+	    }
+            //LOG(INFO) << "process " << rank << " calculate gradient over" << std::endl << std::flush;
+            calculate_subgradient(); //not distributed, only on master process
+ 	    //std::cout<<"-------------------------------------------"<<std::endl;
+            //LOG(INFO) << "process " << rank << " calculate sub-gradient over" << std::endl << std::flush;
+            two_loop();//not distributed, only on master process
+            //LOG(INFO) << "process " << rank << " calculate two-loop over" << std::endl << std::flush;
+            fix_dir_glo_q();//not distributed, orthant limited
+            //LOG(INFO) << "process " << rank << " fix-dir over" << std::endl << std::flush;
+	    for(int i = 1; i < num_proc; i++){
+	        MPI_Send(glo_q, data->glo_fea_dim, MPI_DOUBLE, i, 999, MPI_COMM_WORLD);
+	    }
+        }
+	if(rank != 0){
+	    for(int i = 1; i < num_proc; i++){
+		MPI_Recv(glo_q, data->glo_fea_dim, MPI_DOUBLE, i, 999, MPI_COMM_WORLD, &status);
+	    }
+	}
         line_search();//distributed, calculate loss is distributed
-	    fix_dir_glo_new_w();
+	fix_dir_glo_new_w();
+        
         //std::cout<<step<<std::endl;
         if(meet_criterion()) {//not distributed
             save_model();
