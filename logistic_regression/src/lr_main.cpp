@@ -2,6 +2,7 @@
 #include "load_data.h"
 #include "owlqn.h"
 #include "predict.h"
+#include "ftrl.h"
 #include "mpi.h"
 //#include "gtest/gtest.h"
 #include <glog/logging.h>
@@ -29,13 +30,16 @@ int main(int argc,char* argv[]){
     std::string split_tag = " ";
     Load_Data ld; 
     ld.load_data(train_data_path, split_tag, rank, nproc);
-
+    /*
     LR lr(&ld, nproc, rank);
     lr.run();
+    */
+    FTRL ftrl(&ld, nproc, rank);
+    ftrl.run();
     std::vector<float> model;
     for(int j = 0; j < ld.glo_fea_dim; j++)
-	model.push_back(lr.glo_w[j]);
-
+	model.push_back(ftrl.glo_w[j]);
+    
     Load_Data testdata;
     testdata.load_data(test_data_path, split_tag, rank, nproc);
     //std::cout<<testdata.fea_matrix.size()<<std::endl;

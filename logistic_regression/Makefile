@@ -7,8 +7,8 @@ GTEST_LIB = -L/usr/local/lib
 GTEST_INCLUDE = -I/usr/local/include/gtest
 #train code
 CPP_tag = -std=gnu++11
-train:lr_main.o owlqn.o load_data.o predict.o
-	mpicxx $(CPP_tag) -o train lr_main.o owlqn.o load_data.o predict.o $(LIB) $(GLOG_LIB) -lopenblas -lpthread -lglog
+train:lr_main.o owlqn.o ftrl.o load_data.o predict.o
+	mpicxx $(CPP_tag) -o train lr_main.o owlqn.o ftrl.o load_data.o predict.o $(LIB) $(GLOG_LIB) -lopenblas -lpthread -lglog
 
 lr_main.o: src/lr_main.cpp 
 	mpicxx $(CPP_tag) $(INCLUDE) $(GLOG_INCLUDE) -I ./include -c src/lr_main.cpp
@@ -18,6 +18,9 @@ load_data.o: src/load_data.cpp
 
 owlqn.o: src/owlqn.cpp  
 	mpicxx $(CPP_tag) $(INCLUDE) $(GLOG_INCLUDE) -I ./include -c src/owlqn.cpp
+
+ftrl.o: src/ftrl.cpp
+	mpicxx $(CPP_tag) $(INCLUDE) $(GLOG_INCLUDE) -I ./include -c src/ftrl.cpp
 
 predict.o: src/predict.cpp
 	mpicxx $(CPP_tag) $(INCLUDE) $(GLOG_INCLUDE) -I ./include -c src/predict.cpp

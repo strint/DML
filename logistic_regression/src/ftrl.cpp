@@ -4,7 +4,7 @@ FTRL::FTRL(Load_Data* ld, int total_num_proc, int my_rank)
     : data(ld), num_proc(total_num_proc), rank(my_rank){
     init();
 }
-~FTRL::FTRL(){}
+FTRL::~FTRL(){}
 
 void FTRL::init(){
     loc_w = new float[data->glo_fea_dim]();
@@ -49,8 +49,8 @@ void FTRL::ftrl(){
 		if(abs(loc_z[index]) <= lambda1) loc_w[index] = 0.0;
 		else{
 			float tmpr= 0.0;
-	     		if(loc_z[index] > 0) tmp = loc_z[index] - lambda1;
-			else tmp = loc_z[index] + lambda1;
+	     		if(loc_z[index] > 0) tmpr = loc_z[index] - lambda1;
+			else tmpr = loc_z[index] + lambda1;
 			float tmpl = ((beta + sqrt(loc_n[index])) / alpha  + lambda2);
 			loc_w[index] = tmpr / tmpl;
 	    	}
@@ -63,10 +63,14 @@ void FTRL::ftrl(){
 		int index = data->fea_matrix[j][k].idx;
                 float val = data->fea_matrix[j][k].val;
 		loc_g[index] = (p - data->label[j]) * val;
-		sigma[index] = (sqrt(loc_n[index] + loc_g[index] * loc_g[index]) - sqrt(loc_n[index])) / alpha;
-		loc_z[index] += loc_g[index] - sigma[index] * loc_w[index];
+		loc_sigma[index] = (sqrt(loc_n[index] + loc_g[index] * loc_g[index]) - sqrt(loc_n[index])) / alpha;
+		loc_z[index] += loc_g[index] - loc_sigma[index] * loc_w[index];
 		loc_n[index] += loc_g[index] * loc_g[index];
 	    }
 	}
     }
+}
+
+void FTRL::run(){
+    ftrl();
 }
