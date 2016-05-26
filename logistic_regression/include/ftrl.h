@@ -1,6 +1,7 @@
 #ifndef FTRL_H
 #define FTRL_H
 #include "load_data.h"
+#include "mpi.h"
 #include <math.h>
 
 class FTRL{

@@ -58,14 +58,22 @@ void FTRL::ftrl(){
 	    }
 	    float p = 0.0;
 	    p = sigmoid(wx); 
-
+	    MPI_Status status;
 	    for(int k = 0; k < data->fea_matrix[j].size(); j++){
 		int index = data->fea_matrix[j][k].idx;
                 float val = data->fea_matrix[j][k].val;
 		loc_g[index] = (p - data->label[j]) * val;
-		loc_sigma[index] = (sqrt(loc_n[index] + loc_g[index] * loc_g[index]) - sqrt(loc_n[index])) / alpha;
-		loc_z[index] += loc_g[index] - loc_sigma[index] * loc_w[index];
-		loc_n[index] += loc_g[index] * loc_g[index];
+		if(rank != 0){
+		    MPI_Send(loc_g, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
+		}
+		else if(rank == 0){
+		    for(int ranknum = 0; ranknum < num_proc; ranknum++){
+		        MPI_Recv(glo_g, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
+		    }
+		}
+		loc_sigma[index] = (sqrt(loc_n[index] + glo_g[index] * glo_g[index]) - sqrt(loc_n[index])) / alpha;
+		loc_z[index] += glo_g[index] - loc_sigma[index] * loc_w[index];
+		loc_n[index] += glo_g[index] * glo_g[index];
 	    }
 	}
     }
