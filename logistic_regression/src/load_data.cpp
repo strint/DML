@@ -17,12 +17,7 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
         LOG(ERROR) << "process "<< rank << " open file error: " << data_file << std::endl;
         exit(1);
     }
-    float y = 0.0, value;
-    int nchar, index;
-    std::string line;
-    std::vector<std::string> feature_index;
-    std::vector<sparse_feature> key_val;
-    sparse_feature sf;
+
     while(!fin.eof()){
         std::getline(fin, line);
 	key_val.clear();

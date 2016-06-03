@@ -14,7 +14,12 @@ public:
     Load_Data();
     ~Load_Data();
     void load_data(const char *train_file, std::string split_tag, int rank, int nproc);
+    std::string line;
+    float y, value;
+    int nchar, index;
     std::vector<std::vector<sparse_feature> > fea_matrix;
+    std::vector<sparse_feature> key_val;
+    sparse_feature sf;
     std::vector<float> label;
     long int loc_fea_dim = 0;
     long int glo_fea_dim = 0;
