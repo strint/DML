@@ -35,17 +35,16 @@ int main(int argc,char* argv[]){
     */
     FTRL ftrl(&ld, nproc, rank);
     ftrl.run();
-
-    /*std::vector<float> model;
-    for(int j = 0; j < ld.glo_fea_dim; j++)
-	model.push_back(lr.glo_w[j]);
-    */
-    /*Load_Data testdata;
+    std::vector<float> model;
+    for(int j = 0; j < ld.glo_fea_dim; j++){
+	//std::cout<<"w["<< j << "]: "<<ftrl.loc_w[j]<<std::endl;
+	model.push_back(ftrl.loc_w[j]);
+    }
+    Load_Data testdata;
     testdata.load_data(test_data_path, split_tag, rank, nproc);
-    //std::cout<<testdata.fea_matrix.size()<<std::endl;
     Predict p(&testdata, nproc, rank);
     p.predict(model);
-    */
+   
     MPI::Finalize();
     return 0;
 }
