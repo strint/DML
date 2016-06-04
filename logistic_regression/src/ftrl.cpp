@@ -19,10 +19,10 @@ void FTRL::init(){
     
     alpha = 1.0;
     beta = 1.0;
-    lambda1 = 1.0;
+    lambda1 = 0.0;
     lambda2 = 1.0;
     
-    step = 0;
+    step = 100;
     batch_size = 10;
 }
 
@@ -41,17 +41,21 @@ float FTRL::sigmoid(float x){
 
 void FTRL::ftrl(){
     for(int i = 0; i < step; i++){
-	for(int j = i * batch_size; j < (i + 1) * batch_size; j++){
+        int row = i * batch_size;
+	while( (row < (i + 1) * batch_size) && (row < data->fea_matrix.size()) ){
 	    float wx = 0.0;
-	    for(int k = 0; k < data->fea_matrix[j].size(); j++){
-		int index = data->fea_matrix[j][k].idx;
-	        float val = data->fea_matrix[j][k].val;
-		if(abs(loc_z[index]) <= lambda1) loc_w[index] = 0.0;
+	    for(int col = 0; col < data->fea_matrix[row].size(); col++){
+		int index = data->fea_matrix[row][col].idx;
+	        float val = data->fea_matrix[row][col].val;
+		if(abs(loc_z[index]) <= lambda1){
+	            loc_w[index] = 0.0;
+		}
 		else{
 			float tmpr= 0.0;
 	     		if(loc_z[index] > 0) tmpr = loc_z[index] - lambda1;
 			else tmpr = loc_z[index] + lambda1;
-			float tmpl = ((beta + sqrt(loc_n[index])) / alpha  + lambda2);
+			float tmpl = -1 * ( ( beta + sqrt(loc_n[index]) ) / alpha  + lambda2);
+			std::cout<<tmpr<<std::endl;
 			loc_w[index] = tmpr / tmpl;
 	    	}
 		wx += loc_w[index] * val;
@@ -59,26 +63,41 @@ void FTRL::ftrl(){
 	    float p = 0.0;
 	    p = sigmoid(wx); 
 	    MPI_Status status;
-	    for(int k = 0; k < data->fea_matrix[j].size(); j++){
-		int index = data->fea_matrix[j][k].idx;
-                float val = data->fea_matrix[j][k].val;
-		loc_g[index] = (p - data->label[j]) * val;
+	    for(int col = 0; col < data->fea_matrix[row].size(); col++){
+		int index = data->fea_matrix[row][col].idx;
+                float val = data->fea_matrix[row][col].val;
+		loc_g[index] = (p - data->label[row]) * val;
+
 		if(rank != 0){
 		    MPI_Send(loc_g, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
 		}
 		else if(rank == 0){
+		    for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
+			glo_g[f_idx] = loc_g[f_idx];
+		    }
 		    for(int ranknum = 0; ranknum < num_proc; ranknum++){
-		        MPI_Recv(glo_g, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
+		        MPI_Recv(loc_g, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
+			for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
+                            glo_g[f_idx] += loc_g[f_idx];
+                        }
 		    }
 		}
+
 		loc_sigma[index] = (sqrt(loc_n[index] + glo_g[index] * glo_g[index]) - sqrt(loc_n[index])) / alpha;
 		loc_z[index] += glo_g[index] - loc_sigma[index] * loc_w[index];
 		loc_n[index] += glo_g[index] * glo_g[index];
 	    }
+
+	    if(rank == 0){
+	        for(int jj = 0; jj < data->glo_fea_dim; jj++){
+		    std::cout<<loc_w[jj]<<" ";
+	        }
+            }
 	}
     }
 }
 
 void FTRL::run(){
     ftrl();
+    std::cout<<"train end~"<<std::endl;
 }
