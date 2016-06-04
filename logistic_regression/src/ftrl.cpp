@@ -51,12 +51,11 @@ void FTRL::ftrl(){
 	            loc_w[index] = 0.0;
 		}
 		else{
-			float tmpr= 0.0;
-	     		if(loc_z[index] > 0) tmpr = loc_z[index] - lambda1;
-			else tmpr = loc_z[index] + lambda1;
-			float tmpl = -1 * ( ( beta + sqrt(loc_n[index]) ) / alpha  + lambda2);
-			std::cout<<tmpr<<std::endl;
-			loc_w[index] = tmpr / tmpl;
+		    float tmpr= 0.0;
+	     	    if(loc_z[index] > 0) tmpr = loc_z[index] - lambda1;
+		    else tmpr = loc_z[index] + lambda1;
+		    float tmpl = -1 * ( ( beta + sqrt(loc_n[index]) ) / alpha  + lambda2);
+		    loc_w[index] = tmpr / tmpl;
 	    	}
 		wx += loc_w[index] * val;
 	    }
@@ -65,8 +64,8 @@ void FTRL::ftrl(){
 	    MPI_Status status;
 	    for(int col = 0; col < data->fea_matrix[row].size(); col++){
 		int index = data->fea_matrix[row][col].idx;
-                float val = data->fea_matrix[row][col].val;
-		loc_g[index] = (p - data->label[row]) * val;
+                float value = data->fea_matrix[row][col].val;
+		loc_g[index] = (p - data->label[row]) * value;
 
 		if(rank != 0){
 		    MPI_Send(loc_g, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
@@ -75,7 +74,7 @@ void FTRL::ftrl(){
 		    for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
 			glo_g[f_idx] = loc_g[f_idx];
 		    }
-		    for(int ranknum = 0; ranknum < num_proc; ranknum++){
+		    for(int ranknum = 1; ranknum < num_proc; ranknum++){
 		        MPI_Recv(loc_g, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
 			for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
                             glo_g[f_idx] += loc_g[f_idx];
