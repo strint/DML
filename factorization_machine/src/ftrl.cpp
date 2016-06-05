@@ -58,6 +58,10 @@ void FTRL::update_other_parameter(){
     }//end for
 }
 
+void FTRL::update_v(){
+
+}
+
 void FTRL::update_w(){
     for(int col = 0; col < data->glo_fea_dim; col++){
         if(abs(loc_z[col]) <= lambda1){

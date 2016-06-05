@@ -16,6 +16,7 @@ private:
 	Load_Data* data;
 	void init();
 	float sigmoid(float x);
+	void update_v();
 	void update_w();
         void update_other_parameter();
 	void ftrl();
