@@ -11,6 +11,8 @@ public:
 	~FTRL();
 	float* glo_w;
 	float* loc_w;
+	float* glo_v;
+	float* loc_v;
         void run();
 private:
 	Load_Data* data;

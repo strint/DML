@@ -9,6 +9,10 @@ FTRL::~FTRL(){}
 void FTRL::init(){
     loc_w = new float[data->glo_fea_dim]();
     glo_w = new float[data->glo_fea_dim]();
+
+    loc_v = new float[data->glo_fea_dim]();
+    glo_v = new float[data->glo_fea_dim]();
+
     loc_g = new float[data->glo_fea_dim]();
     glo_g = new float[data->glo_fea_dim]();
 
