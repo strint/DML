@@ -7,19 +7,75 @@ FTRL::FTRL(Load_Data* ld, int total_num_proc, int my_rank)
 FTRL::~FTRL(){}
 
 void FTRL::init(){
-    loc_w = new float[data->glo_fea_dim]();
+
+    loc_f_val = new float[data->glo_fea_dim]();
+
     glo_w = new float[data->glo_fea_dim]();
+    loc_w = new float[data->glo_fea_dim]();
 
-    loc_v = new float[data->glo_fea_dim]();
-    glo_v = new float[data->glo_fea_dim]();
+    loc_v = new float*[data->glo_fea_dim];
+    for(int i = 0; i < data->glo_fea_dim; i++){
+	loc_v[i] = new float[k];
+	for(int j = 0; j < k; j++){
+	    loc_v[i][j] = 0.0;	
+	}
+    }
+    glo_v = new float*[data->glo_fea_dim];
+    for(int i = 0; i < data->glo_fea_dim; i++){
+	glo_v[i] = new float[k];
+	for(int j = 0; j < k; j++){
+	    glo_v[i][j] = 0.0;
+	}
+    }
+//---------------------------------------------
+    loc_w_g = new float[data->glo_fea_dim]();
+    glo_w_g = new float[data->glo_fea_dim]();
 
-    loc_g = new float[data->glo_fea_dim]();
-    glo_g = new float[data->glo_fea_dim]();
+    loc_v_g = new float*[data->glo_fea_dim];
+    for(int i = 0; i < data->glo_fea_dim; i++){
+        loc_v_g[i] = new float[k];
+        for(int j = 0; j < k; j++){
+            loc_v_g[i][j] = 0.0;
+        }
+    }
 
-    loc_z = new float[data->glo_fea_dim]();
-    loc_sigma = new float[data->glo_fea_dim]();
-    loc_n = new float[data->glo_fea_dim]();
+    glo_v_g = new float*[data->glo_fea_dim];
+    for(int i = 0; i < data->glo_fea_dim; i++){
+        glo_v_g[i] = new float[k];
+        for(int j = 0; j < k; j++){
+            glo_v_g[i][j] = 0.0;
+        }
+    }
+//---------------------------------------------------------
+    loc_w_z = new float[data->glo_fea_dim]();
+    loc_w_sigma = new float[data->glo_fea_dim]();
+    loc_w_n = new float[data->glo_fea_dim]();
     
+    loc_v_z = new float*[data->glo_fea_dim];
+    for(int i = 0; i < data->glo_fea_dim; i++){
+        loc_v_z[i] = new float[k];
+        for(int j = 0; j < k; j++){
+            loc_v_z[i][j] = 0.0;
+        }
+    }    
+    
+    loc_v_sigma = new float*[data->glo_fea_dim];
+    for(int i = 0; i < data->glo_fea_dim; i++){
+        loc_v_sigma[i] = new float[k];
+        for(int j = 0; j < k; j++){
+            loc_v_sigma[i][j] = 0.0;
+        }
+    }
+ 
+    loc_v_n = new float*[data->glo_fea_dim];
+    for(int i = 0; i < data->glo_fea_dim; i++){
+        loc_v_n[i] = new float[k];
+        for(int j = 0; j < k; j++){
+            loc_v_n[i][j] = 0.0;
+        }
+    }
+//-----------------------------------------------------
+    factor = 2;
     alpha = 1.0;
     beta = 1.0;
     lambda1 = 0.0;
@@ -63,7 +119,9 @@ void FTRL::update_other_parameter(){
 }
 
 void FTRL::update_v(){
-
+    for(int i = 0; i < k; i++){
+        	
+    }
 }
 
 void FTRL::update_w(){

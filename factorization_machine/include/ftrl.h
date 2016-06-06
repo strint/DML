@@ -11,8 +11,8 @@ public:
 	~FTRL();
 	float* glo_w;
 	float* loc_w;
-	float* glo_v;
-	float* loc_v;
+	float** glo_v;
+	float** loc_v;
         void run();
 private:
 	Load_Data* data;
@@ -24,13 +24,21 @@ private:
 	void ftrl();
   	int step;
 
-	float* loc_g;
-	float* glo_g;
 
-	float* loc_z;
-	float* loc_sigma;
-	float* loc_n;
+        float* loc_f_val;
+	float* loc_w_g;
+	float* glo_w_g;
+	float** loc_v_g;
+	float** glo_v_g;
 
+	float* loc_w_z;
+	float* loc_w_sigma;
+	float* loc_w_n;
+ 	float** loc_v_z;
+	float** loc_v_sigma;
+	float**loc_v_n;
+
+	float factor;
 	float alpha;
 	float beta;
 	float lambda1;
