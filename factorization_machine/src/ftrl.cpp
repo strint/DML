@@ -110,21 +110,37 @@ void FTRL::update_other_parameter(){
 }
 
 void FTRL::update_v(){
-    for(int i = 0; i < k; i++){
-        	
+    for(int j = 0; j < data->glo_fea_dim; j++){
+        for(int k = 0; k < factor; k++){
+	   float tmp_z = loc_z_v[j * data->glo_fea_dim + k];
+            if(abs(tmp_z) <= lambda1){
+		loc_z_v[j * data->glo_fea_dim + k] = 0.0;
+	    }
+	    else{
+		float tmpr = 0.0;
+	 	if(tmp_z > 0){
+		    tmpr = tmp_z - lambda1;
+		}
+	        else{
+		    tmpr = tmp_z + lambda1;
+		}
+		float tmpl = -1 * ( ( beta + sqrt(loc_n_v[j * data->glo_fea_dim + k]) ) / alpha  + lambda2);
+		loc_v[j * data->glo_fea_dim + k] = tmpr / tmpl;
+	    }
+        }
     }
 }
 
 void FTRL::update_w(){
     for(int col = 0; col < data->glo_fea_dim; col++){
-        if(abs(loc_z[col]) <= lambda1){
+        if(abs(loc_z_w[col]) <= lambda1){
             loc_w[col] = 0.0;
         }
         else{
             float tmpr= 0.0;
-            if(loc_z[col] > 0) tmpr = loc_z[col] - lambda1;
-            else tmpr = loc_z[col] + lambda1;
-            float tmpl = -1 * ( ( beta + sqrt(loc_n[col]) ) / alpha  + lambda2);
+            if(loc_z_w[col] > 0) tmpr = loc_z_w[col] - lambda1;
+            else tmpr = loc_z_w[col] + lambda1;
+            float tmpl = -1 * ( ( beta + sqrt(loc_n_w[col]) ) / alpha  + lambda2);
             loc_w[col] = tmpr / tmpl;
         }
     }
@@ -163,12 +179,14 @@ void FTRL::ftrl(){
 	    float vxvx = 0.0, vvxx = 0.0;
             for(int k = 0; k < factor; k++){
 		for(int col = 0; col < data->fea_matrix[row].size(); col++){
+		    index = data->fea_matrix[row][col].idx;
+                    value = data->fea_matrix[row][col].val;
                     vxvx += loc_v[col][k] * value;
 		    vvxx += loc_v[col][k]*loc_v[col][k] * value*value;
                 }
-		vxvx *= vxvx;
+	        vxvx *= vxvx;
 		vxvx -= vvxx;
-		wx += vxvx;
+		wx += vxvx;	
             }
 	    p = sigmoid(wx);
             loc_g[index] += (p - data->label[row]) * value;
