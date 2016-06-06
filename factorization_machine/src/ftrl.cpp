@@ -80,31 +80,43 @@ void FTRL::update_other_parameter(){
     MPI_Status status;
     for(int col = 0; col < data->glo_fea_dim; col++){
         if(rank != 0){
-            MPI_Send(loc_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
-	    MPI_Send(loc_v, data->algo_fea_dim*factor, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
+            MPI_Send(loc_g_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
+	    MPI_Send(loc_g_v, data->algo_fea_dim*factor, MPI_FLOAT, 0, 999, MPI_COMM_WORLD);
         }
         else if(rank == 0){
             for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
-                glo_w[f_idx] = loc_w[f_idx];
+                glo_g_w[f_idx] = loc_g_w[f_idx];
             }
-	    for(int k = 0; k < factor; k++){
-		for(int j = 0; j < data->glo_fea_dim; j++){
-		    glo_v[j][k] = loc_v[j][k];
+       
+  	    for(int j = 0; j < data->glo_fea_dim; j++){
+		for(int k = 0; k < factor; k++){
+       		    glo_v_g[j][k] = loc_v_g[j][k];
 		}
 	    }
 
             for(int ranknum = 1; ranknum < num_proc; ranknum++){
-                MPI_Recv(loc_g, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
+                MPI_Recv(loc_g_w, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
                 for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
-                    glo_g[f_idx] += loc_g[f_idx];
+                    glo_g_w[f_idx] += loc_g_w[f_idx];
                 }
 		
-		MPI_Recv();
+		MPI_Recv(loc_g_v, data->algo_fea_dim*factor, MPI_FLOAT, ranknum, 999, MPI_COMM_WORLD, &status);
+		for(int f_idx = 0; f_idx < data->algo_fea_dim*factor; f_idx++){
+		    loc_g_v[f_idx] = loc_g_w[f_idx];
+		}
+
             }
 
-            loc_sigma[col] = (sqrt(loc_n[col] + glo_g[col] * glo_g[col]) - sqrt(loc_n[col])) / alpha;
-            loc_z[col] += glo_g[col] - loc_sigma[col] * loc_w[col];
-            loc_n[col] += glo_g[col] * glo_g[col];
+            loc_sigma_w[col] = (sqrt(loc_n_w[col] + glo_g_w[col] * glo_g_w[col]) - sqrt(loc_n_w[col])) / alpha;
+            loc_z_w[col] += glo_g_w[col] - loc_sigma_w[col] * loc_w[col];
+            loc_n_w[col] += glo_g_w[col] * glo_g_w[col];
+	
+	    for(int k = 0; k < factor; k++){
+		int index = col*data->algo_fea_dim + k;
+	 	loc_sigma_v[index] = (sqrt(loc_n_v[index] + glo_g_v[index] * glo_g_v[index]) - sqrt(loc_n_v[index])) / alpha;
+	 	loc_z_v[index] += glo_g_w[index] - loc_sigma_v[index] * loc_v[index];
+		loc_n_v[index] += glo_g_v[index] * glo_g_v[index];
+	    }
         }
     }//end for
 }
