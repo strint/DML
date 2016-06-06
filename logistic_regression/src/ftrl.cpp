@@ -95,11 +95,11 @@ void FTRL::ftrl(){
 	  	index = data->fea_matrix[row][col].idx;
 	        value = data->fea_matrix[row][col].val;
 	        wx += loc_w[index] * value;
-	        p = sigmoid(wx);
-                loc_g[index] += (p - data->label[row]) * value;
             }
+	    p = sigmoid(wx);
+            loc_g[index] += (p - data->label[row]) * value;
             ++row;
-        }
+        } 
 	for(int col = 0; col < data->glo_fea_dim; ++col){
 	    loc_g[col] /= batch_size;
 	}
