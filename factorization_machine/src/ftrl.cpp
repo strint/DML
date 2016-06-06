@@ -158,52 +158,61 @@ void FTRL::update_w(){
     }
 }
 
+void FTRL::sync_parameters(){
+    MPI_Recv(glo_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD, &status);
+    for(int j = 0; j < data->glo_fea_dim; j++){
+        loc_w[j] = glo_w[j];
+    }
+
+    MPI_Recv(glo_v, data->glo_fea_dim*factor, MPI_FLOAT, rank, 999, MPI_COMM_WORLD);
+    for(int j = 0; j < data->glo_fea_dim*factor; j++){
+        loc_v[j] = glo_v[j];
+    }
+}
+
 void FTRL::ftrl(){
     MPI_Status status;
     for(int i = 0; i < step; i++){
         int row = i * batch_size, index;
+	float value;
         if(rank == 0){
             update_w();
+	    update_v();
             for(int rank = 1; rank < num_proc; rank++){
                 MPI_Send(loc_w, data->glo_fea_dim, MPI_FLOAT, rank, 99, MPI_COMM_WORLD);
 		MPI_Send(loc_v, data->glo_fea_dim*factor, MPI_FLOAT, rank, 999, MPI_COMM_WORLD);
             }
         }
         else if(rank != 0){
-            MPI_Recv(glo_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD, &status);
-            for(int w_idx = 0; w_idx < data->glo_fea_dim; w_idx++){
-                loc_w[w_idx] = glo_w[w_idx];
-            }
-	    
-	    MPI_Recv(glo_v, data->glo_fea_dim*factor, MPI_FLOAT, rank, 999, MPI_COMM_WORLD);
-	    for(int j = 0; j < data->glo_fea_dim*factor; j++){
-		loc_v[j] = glo_v[j];
-	    }
+    	    sync_parameters();
         }
+
 	while( (row < (i + 1) * batch_size) && (row < data->fea_matrix.size()) ){
-	    float wx = 0.0, p = 0.0, value = 0.0;
+	    float wx = 0.0, p = 0.0;
 	    for(int col = 0; col < data->fea_matrix[row].size(); col++){
 	  	index = data->fea_matrix[row][col].idx;
 	        value = data->fea_matrix[row][col].val;
 	        wx += loc_w[index] * value;
 	    }
-
-	    float vxvx = 0.0, vvxx = 0.0;
+	    
             for(int k = 0; k < factor; k++){
+		float vxvx = 0.0, vvxx = 0.0;
 		for(int col = 0; col < data->fea_matrix[row].size(); col++){
 		    index = data->fea_matrix[row][col].idx;
                     value = data->fea_matrix[row][col].val;
-                    vxvx += loc_v[col][k] * value;
-		    vvxx += loc_v[col][k]*loc_v[col][k] * value*value;
+                    vxvx += loc_v[col * factor + k] * value;
+		    vvxx += loc_v[col * factor + k] * loc_v[col * factor + k] * value*value;
                 }
 	        vxvx *= vxvx;
 		vxvx -= vvxx;
 		wx += vxvx;	
             }
 	    p = sigmoid(wx);
-            loc_g[index] += (p - data->label[row]) * value;
+            loc_g_w[index] += (p - data->label[row]) * value;
+	    
             ++row;
         }
+
 	for(int col = 0; col < data->glo_fea_dim; ++col){
 	    loc_g[col] /= batch_size;
 	}

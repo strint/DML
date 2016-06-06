@@ -20,6 +20,7 @@ private:
 	float sigmoid(float x);
 	void update_v();
 	void update_w();
+	void sync_parameters();
         void update_other_parameter();
 	void ftrl();
   	int step;
