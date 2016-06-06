@@ -24,19 +24,18 @@ private:
 	void ftrl();
   	int step;
 
-
         float* loc_f_val;
-	float* loc_w_g;
-	float* glo_w_g;
-	float** loc_v_g;
-	float** glo_v_g;
+	float* loc_g_w;
+	float* glo_g_w;
+	float** loc_g_v;
+	float** glo_g_v;
 
-	float* loc_w_z;
-	float* loc_w_sigma;
-	float* loc_w_n;
- 	float** loc_v_z;
-	float** loc_v_sigma;
-	float**loc_v_n;
+	float* loc_z_w;
+	float* loc_sigma_w;
+	float* loc_n_w;
+ 	float** loc_z_v;
+	float** loc_sigma_v;
+	float** loc_n_v;
 
 	float factor;
 	float alpha;
