@@ -209,12 +209,27 @@ void FTRL::ftrl(){
             }
 	    p = sigmoid(wx);
             loc_g_w[index] += (p - data->label[row]) * value;
-	    
+	    for(int l = 0; l < data->glo_fea_dim; l++){
+		float vx = 0.0;
+        	for(int k = 0; k < factor; k++){
+		    for(int j = 0; j != l && j < data->glo_fea_dim; j++){
+		        vx += loc_v[j*factor + k] * value; 
+		    }
+		    vx *= data->fea_matrix[row][l].val;
+		    loc_g_v[l][k] += (p - data->label[row]) * value;
+	        }
+	    } 
             ++row;
         }
 
 	for(int col = 0; col < data->glo_fea_dim; ++col){
 	    loc_g[col] /= batch_size;
+	}
+
+	for(int col = 0; col < data->glo_fea_dim; ++col){
+	    for(int k = 0; k < factor; k++){
+		loc_g_v[col][k] /= batch_size;
+	    }
 	}
         update_other_parameter();     
     }//end for
