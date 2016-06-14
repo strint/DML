@@ -9,10 +9,10 @@ FTRL::~FTRL(){}
 
 void FTRL::init(){
     v_dim = data->glo_fea_dim*factor;
-    
+//----------------------w--------------------- 
     glo_w = new float[data->glo_fea_dim]();
     loc_w = new float[data->glo_fea_dim]();
-
+//----------------------v---------------------
     loc_v=new float[v_dim]();
     loc_v_arr=new float*[data->glo_fea_dim];
     for (int i = 0; i < data->glo_fea_dim; i++)
@@ -23,10 +23,10 @@ void FTRL::init(){
     for(int i = 0; i < data->glo_fea_dim; i++){
 	glo_v_arr[i] = &glo_v[i*factor];
     }
-//---------------------------------------------
+//----------------------g_w----------------------
     loc_g_w = new float[data->glo_fea_dim]();
     glo_g_w = new float[data->glo_fea_dim]();
-
+//----------------------g_v----------------------
     loc_g_v=new float[v_dim]();
     loc_g_v_arr=new float*[data->glo_fea_dim];
     for (int i = 0; i < data->glo_fea_dim; i++)
@@ -37,11 +37,11 @@ void FTRL::init(){
     for(int i = 0; i < data->glo_fea_dim; i++){
         glo_g_v_arr[i] = &glo_g_v[i*factor];
     }
-//---------------------------------------------------------
+//------------------------w---------------------
     loc_z_w = new float[data->glo_fea_dim]();
     loc_sigma_w = new float[data->glo_fea_dim]();
     loc_n_w = new float[data->glo_fea_dim]();
-    
+//------------------------v---------------------    
     loc_z_v=new float[v_dim]();
     loc_z_v_arr=new float*[data->glo_fea_dim];
     for (int i = 0; i < data->glo_fea_dim; i++)
@@ -216,7 +216,7 @@ void FTRL::ftrl(){
 		        vx += loc_v_arr[j][k] * value; 
 		    }
 		    vx *= data->fea_matrix[row][l].val;
-		    loc_g_v_arr[l][k] += (p - data->label[row]) * value;
+		    loc_g_v_arr[l][k] += (p - data->label[row]) * vx;
 	        }
 	    } 
             ++row;
@@ -226,9 +226,9 @@ void FTRL::ftrl(){
 	    loc_g_w[col] /= batch_size;
 	}
 
-	for(int col = 0; col < data->glo_fea_dim; ++col){
+	for(int row_v = 0; row_v < data->glo_fea_dim; ++row_v){
 	    for(int k = 0; k < factor; k++){
-		loc_g_v_arr[col][k] /= batch_size;
+		loc_g_v_arr[row_v][k] /= batch_size;
 	    }
 	}
         update_other_parameter();     
