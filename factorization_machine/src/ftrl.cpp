@@ -77,51 +77,48 @@ float FTRL::sigmoid(float x){
 
 void FTRL::update_other_parameter(){
     MPI_Status status;
-    for(int col = 0; col < data->glo_fea_dim; col++){
-        if(rank != 0){
-            MPI_Send(loc_g_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
-	    MPI_Send(loc_g_v, data->glo_fea_dim*factor, MPI_FLOAT, 0, 999, MPI_COMM_WORLD);
-        }
-        else if(rank == 0){
-            for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
-                glo_g_w[f_idx] = loc_g_w[f_idx];
-            }
-       
-  	    for(int j = 0; j < data->glo_fea_dim; j++){
-		for(int k = 0; k < factor; k++){
-       		    glo_g_v_arr[j][k] = loc_g_v_arr[j][k];
-		}
+    if(rank != 0){
+	MPI_Send(loc_g_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
+	MPI_Send(loc_g_v, data->glo_fea_dim*factor, MPI_FLOAT, 0, 999, MPI_COMM_WORLD);
+    }
+    else if(rank == 0){
+	for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
+	    glo_g_w[f_idx] = loc_g_w[f_idx];
+	}
+	for(int j = 0; j < data->glo_fea_dim; j++){
+	    for(int k = 0; k < factor; k++){
+		glo_g_v_arr[j][k] = loc_g_v_arr[j][k];
 	    }
-
-            for(int ranknum = 1; ranknum < num_proc; ranknum++){
-                MPI_Recv(loc_g_w, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
-                for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
-                    glo_g_w[f_idx] += loc_g_w[f_idx];
-                }
-		
-		MPI_Recv(loc_g_v, data->glo_fea_dim*factor, MPI_FLOAT, ranknum, 999, MPI_COMM_WORLD, &status);
-		for(int f_idx = 0; f_idx < data->glo_fea_dim*factor; f_idx++){
-		    glo_g_v[f_idx] = loc_g_v[f_idx];
+	}
+	for(int ranknum = 1; ranknum < num_proc; ranknum++){
+	    MPI_Recv(loc_g_w, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
+	    for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
+	       glo_g_w[f_idx] += loc_g_w[f_idx];
+	    }
+	    MPI_Recv(loc_g_v, data->glo_fea_dim*factor, MPI_FLOAT, ranknum, 999, MPI_COMM_WORLD, &status);
+	    for(int j = 0; j < data->glo_fea_dim; j++){
+		for(int k = 0; k < factor; k++){
+		    glo_g_v_arr[j][k] = loc_g_v_arr[j][k];
 		}
-
             }
+	}
+        for(int col = 0; col < data->glo_fea_dim; col++){
+	    loc_sigma_w[col] = (sqrt(loc_n_w[col] + glo_g_w[col] * glo_g_w[col]) - sqrt(loc_n_w[col])) / alpha;
+	    loc_z_w[col] += glo_g_w[col] - loc_sigma_w[col] * loc_w[col];
+	    loc_n_w[col] += glo_g_w[col] * glo_g_w[col];
 
-            loc_sigma_w[col] = (sqrt(loc_n_w[col] + glo_g_w[col] * glo_g_w[col]) - sqrt(loc_n_w[col])) / alpha;
-            loc_z_w[col] += glo_g_w[col] - loc_sigma_w[col] * loc_w[col];
-            loc_n_w[col] += glo_g_w[col] * glo_g_w[col];
-	
 	    for(int k = 0; k < factor; k++){
 		int index = col*data->glo_fea_dim + k;
-	 	loc_sigma_v[index] = (sqrt(loc_n_v[index] + glo_g_v[index] * glo_g_v[index]) - sqrt(loc_n_v[index])) / alpha;
-	 	loc_z_v[index] += glo_g_w[index] - loc_sigma_v[index] * loc_v[index];
+		loc_sigma_v[index] = (sqrt(loc_n_v[index] + glo_g_v[index] * glo_g_v[index]) - sqrt(loc_n_v[index])) / alpha;
+		loc_z_v[index] += glo_g_w[index] - loc_sigma_v[index] * loc_v[index];
 		loc_n_v[index] += glo_g_v[index] * glo_g_v[index];
 	    }
-        }
-    }//end for
+	}
+    }
 }
 
 void FTRL::update_v(){
-    for(int j = 0; j < data->glo_fea_dim; j++){
+     for(int j = 0; j < data->glo_fea_dim; j++){
         for(int k = 0; k < factor; k++){
 	   float tmp_z = loc_z_v_arr[j][k];
             if(abs(tmp_z) <= lambda1){
@@ -129,7 +126,7 @@ void FTRL::update_v(){
 	    }
 	    else{
 		float tmpr = 0.0;
-	 	if(tmp_z > 0){
+	 	if(tmp_z >= 0){
 		    tmpr = tmp_z - lambda1;
 		}
 	        else{
@@ -149,7 +146,7 @@ void FTRL::update_w(){
         }
         else{
             float tmpr= 0.0;
-            if(loc_z_w[col] > 0) tmpr = loc_z_w[col] - lambda1;
+            if(loc_z_w[col] >= 0) tmpr = loc_z_w[col] - lambda1;
             else tmpr = loc_z_w[col] + lambda1;
             float tmpl = -1 * ( ( beta + sqrt(loc_n_w[col]) ) / alpha  + lambda2);
             loc_w[col] = tmpr / tmpl;
@@ -186,7 +183,7 @@ void FTRL::ftrl(){
         else if(rank != 0){
     	    sync_parameters();
         }
-
+        float loss_sum = 0.0;
 	while( (row < (i + 1) * batch_size) && (row < data->fea_matrix.size()) ){
 	    float wx = 0.0, p = 0.0;
 	    for(int col = 0; col < data->fea_matrix[row].size(); col++){
@@ -208,19 +205,24 @@ void FTRL::ftrl(){
 		wx += vxvx;	
             }
 	    p = sigmoid(wx);
-            loc_g_w[index] += (p - data->label[row]) * value;
-	    for(int l = 0; l < data->glo_fea_dim; l++){
-		float vx = 0.0;
-        	for(int k = 0; k < factor; k++){
-		    for(int j = 0; j != l && j < data->glo_fea_dim; j++){
-		        vx += loc_v_arr[j][k] * value; 
-		    }
-		    vx *= data->fea_matrix[row][l].val;
-		    loc_g_v_arr[l][k] += (p - data->label[row]) * vx;
-	        }
-	    } 
-            ++row;
-        }
+	    loss_sum += (p - data->label[row]);
+	    ++row;
+    	}
+
+	for(int col = 0; col < data->fea_matrix[row].size(); col++){
+	    index = data->fea_matrix[row][col].idx;
+            value = data->fea_matrix[row][col].val;
+            loc_g_w[index] = loss_sum * value;
+
+ 	    float vx = 0.0;
+            for(int k = 0; k < factor; k++){
+		for(int j = 0; j != col && j < data->glo_fea_dim; j++){
+		    vx += loc_v_arr[j][k] * data->fea_matrix[row][j].val; 
+		}
+		vx *= value;
+		loc_g_v_arr[col][k] += loss_sum * vx;
+	    }
+	} 
 
 	for(int col = 0; col < data->glo_fea_dim; ++col){
 	    loc_g_w[col] /= batch_size;
