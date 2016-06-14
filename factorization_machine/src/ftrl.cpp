@@ -21,7 +21,7 @@ void FTRL::init(){
     glo_v = new float[v_dim]();
     glo_v_arr = new float*[data->glo_fea_dim];
     for(int i = 0; i < data->glo_fea_dim; i++){
-	glo_v_arr = &glo_v[i*factor];
+	glo_v_arr[i] = &glo_v[i*factor];
     }
 //---------------------------------------------
     loc_g_w = new float[data->glo_fea_dim]();
@@ -32,10 +32,10 @@ void FTRL::init(){
     for (int i = 0; i < data->glo_fea_dim; i++)
         loc_g_v_arr[i]=&loc_g_v[i*factor];
 
-    glo_g_v = new float*[v_dim]();
-    glo_g_v_arr = new float[data->glo_fea_dim];
+    glo_g_v = new float[v_dim]();
+    glo_g_v_arr = new float*[data->glo_fea_dim];
     for(int i = 0; i < data->glo_fea_dim; i++){
-        glo_g_v_arr = &glo_g_v[i*factor];
+        glo_g_v_arr[i] = &glo_g_v[i*factor];
     }
 //---------------------------------------------------------
     loc_z_w = new float[data->glo_fea_dim]();
