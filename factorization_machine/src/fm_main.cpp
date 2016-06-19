@@ -1,6 +1,5 @@
 #include <string>
 #include "load_data.h"
-#include "owlqn.h"
 #include "predict.h"
 #include "ftrl.h"
 #include "mpi.h"

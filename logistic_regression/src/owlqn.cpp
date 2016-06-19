@@ -146,7 +146,7 @@ double LR::sigmoid(double x){
 }
 
 double LR::calculate_loss(double *para_w){
-    double f = 0.0, val = 0.0, wx = 0.0, single_loss = 0.0;
+    double f = 0.0, val = 0.0, wx = 0.0, single_loss = 0.0, regular_loss = 0.0;
     int index;
     for(int i = 0; i < data->fea_matrix.size(); i++){
         wx = 0.0;
@@ -160,7 +160,10 @@ double LR::calculate_loss(double *para_w){
         single_loss = data->label[i] * log(sigmoid(wx)) + (1 - data->label[i]) * log(1 - sigmoid(wx));
         f += single_loss;
     }
-    return -f / data->fea_matrix.size();
+    for(int j = 0; j < data->fea_matrix[0].size(); j++){
+	regular_loss += abs( *(para_w + index) );
+    }
+    return -f / data->fea_matrix.size() + regular_loss;
 }
 
 void LR::calculate_gradient(){
