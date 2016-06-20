@@ -81,42 +81,33 @@ float FTRL::sigmoid(float x){
 void FTRL::update_other_parameter(){
     std::cout<<"update_other_parameter"<<std::endl;
     MPI_Status status;
-    std::cout<<rank<<std::endl;
     if(rank != 0){
 	MPI_Send(loc_g_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
 	MPI_Send(loc_g_v, data->glo_fea_dim*factor, MPI_FLOAT, 0, 999, MPI_COMM_WORLD);
     }
     else if(rank == 0){
-	for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
-	    glo_g_w[f_idx] = loc_g_w[f_idx];
-	}
-	for(int j = 0; j < data->glo_fea_dim; j++){
-	    for(int k = 0; k < factor; k++){
-		glo_g_v_arr[j][k] = loc_g_v_arr[j][k];
-	    }
-	}
 	for(int ranknum = 1; ranknum < num_proc; ranknum++){
-	    MPI_Recv(loc_g_w, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
-	    for(int f_idx = 0; f_idx < data->glo_fea_dim; f_idx++){
-	       glo_g_w[f_idx] += loc_g_w[f_idx];
+	    MPI_Recv(glo_g_w, data->glo_fea_dim, MPI_FLOAT, ranknum, 99, MPI_COMM_WORLD, &status);
+	    for(int j = 0; j < data->glo_fea_dim; j++){
+	       loc_g_w[j] += glo_g_w[j];
 	    }
-	    MPI_Recv(loc_g_v, data->glo_fea_dim*factor, MPI_FLOAT, ranknum, 999, MPI_COMM_WORLD, &status);
+	    MPI_Recv(glo_g_v, data->glo_fea_dim*factor, MPI_FLOAT, ranknum, 999, MPI_COMM_WORLD, &status);
 	    for(int j = 0; j < data->glo_fea_dim; j++){
 		for(int k = 0; k < factor; k++){
-		    glo_g_v_arr[j][k] = loc_g_v_arr[j][k];
+		    loc_g_v_arr[j][k] = glo_g_v_arr[j][k];
 		}
             }
 	}
         for(int col = 0; col < data->glo_fea_dim; col++){
-	    loc_sigma_w[col] = (sqrt(loc_n_w[col] + glo_g_w[col] * glo_g_w[col]) - sqrt(loc_n_w[col])) / alpha;
-	    loc_z_w[col] += glo_g_w[col] - loc_sigma_w[col] * loc_w[col];
-	    loc_n_w[col] += glo_g_w[col] * glo_g_w[col];
+	    loc_sigma_w[col] = (sqrt(loc_n_w[col] + loc_g_w[col] * loc_g_w[col]) - sqrt(loc_n_w[col])) / alpha;
+	    loc_z_w[col] += loc_g_w[col] - loc_sigma_w[col] * loc_w[col];
+	    loc_n_w[col] += loc_g_w[col] * loc_g_w[col];
 
 	    for(int k = 0; k < factor; k++){
 		int index = col*data->glo_fea_dim + k;
-		loc_sigma_v[index] = (sqrt(loc_n_v[index] + glo_g_v[index] * glo_g_v[index]) - sqrt(loc_n_v[index])) / alpha;
-		loc_z_v[index] += glo_g_w[index] - loc_sigma_v[index] * loc_v[index];
-		loc_n_v[index] += glo_g_v[index] * glo_g_v[index];
+		loc_sigma_v[index] = (sqrt(loc_n_v[index] + loc_g_v[index] * loc_g_v[index]) - sqrt(loc_n_v[index])) / alpha;
+		loc_z_v[index] += loc_g_w[index] - loc_sigma_v[index] * loc_v[index];
+		loc_n_v[index] += loc_g_v[index] * loc_g_v[index];
 	    }
 	}
     }
@@ -131,15 +122,15 @@ void FTRL::update_g(){
                 vx += loc_v_arr[j][k] * temp_value[j] / batch_size;
             }
             vx *= temp_value[col] / batch_size;;
-            loc_g_v_arr[col][k] += loss_sum * vx;
+            loc_g_v_arr[col][k] = loss_sum * vx;
         }
     }
     for(int col = 0; col < data->glo_fea_dim; ++col){
         loc_g_w[col] /= batch_size;
     }
-    for(int row_v = 0; row_v < data->glo_fea_dim; ++row_v){
+    for(int j = 0; j < data->glo_fea_dim; ++j){
         for(int k = 0; k < factor; k++){
-            loc_g_v_arr[row_v][k] /= batch_size;
+            loc_g_v_arr[j][k] /= batch_size;
         }
     }
 }
@@ -183,7 +174,7 @@ void FTRL::update_w(){
 }
 
 void FTRL::update_parameter(){
-    //std::cout<<"rank = "<<rank<<std::endl; 
+    MPI_Status status;
     if(rank == 0){
         update_w();
         update_v();
@@ -205,7 +196,6 @@ void FTRL::update_parameter(){
             loc_v[j] = glo_v[j];
         }
     }
-    //std::cout<<"after update_parameter rank = "<<rank<<std::endl;
 }
 
 
@@ -219,7 +209,7 @@ void FTRL::ftrl(){
 	memset(temp_value, 0, data->glo_fea_dim);
 	while( (row < (i + 1) * batch_size) && (row < data->fea_matrix.size()) ){
 	    float wx = bias, p = 0.0, value;
-	    for(int col = 0; col < data->fea_matrix[row].size(); col++){//one instance
+	    for(int col = 0; col < data->fea_matrix[row].size(); col++){//for one instance
 	  	index = data->fea_matrix[row][col].idx;
 	        value = data->fea_matrix[row][col].val;
 		temp_value[index] += value;
@@ -246,26 +236,7 @@ void FTRL::ftrl(){
 	    //std::cout<<"loss_sum = "<<loss_sum<<std::endl; 
 	    ++row;
     	}
-	for(int col = 0; col < data->glo_fea_dim; col++){
-            loc_g_w[index] = loss_sum * temp_value[col] / batch_size;
-
- 	    float vx = 0.0;
-            for(int k = 0; k < factor; k++){
-		for(int j = 0; j != col && j < data->glo_fea_dim; j++){
-		    vx += loc_v_arr[j][k] * temp_value[j] / batch_size; 
-		}
-		vx *= temp_value[col] / batch_size;;
-		loc_g_v_arr[col][k] += loss_sum * vx;
-	    }
-	} 
-	for(int col = 0; col < data->glo_fea_dim; ++col){
-	    loc_g_w[col] /= batch_size;
-	}
-	for(int row_v = 0; row_v < data->glo_fea_dim; ++row_v){
-	    for(int k = 0; k < factor; k++){
-		loc_g_v_arr[row_v][k] /= batch_size;
-	    }
-	}
+	update_g();
         update_other_parameter();     
 	std::cout<<"end one step"<<std::endl;
     }//end for
