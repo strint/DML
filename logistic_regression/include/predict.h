@@ -14,6 +14,7 @@ public:
 
     void predict(std::vector<float>);
     Load_Data* data;
+    float pctr;
 
     //MPI process info
     int num_proc; // total num of process in MPI comm world

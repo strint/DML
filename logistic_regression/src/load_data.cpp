@@ -22,10 +22,10 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
         std::getline(fin, line);
 	key_val.clear();
 	const char *pline = line.c_str();
-	if(sscanf(pline, "%f%n", &y, &nchar) >= 1){
+	if(sscanf(pline, "%d%n", &y, &nchar) >= 1){
 	    pline += nchar;
 	    label.push_back(y);
-	    while(sscanf(pline, "%d:%f%n", &index, &value, &nchar) >= 2){
+	    while(sscanf(pline, "%ld:%d%n", &index, &value, &nchar) >= 2){
 		pline += nchar;
 		sf.idx = index;
 	        if(sf.idx + 1 > loc_fea_dim) loc_fea_dim = sf.idx + 1;
