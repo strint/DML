@@ -32,7 +32,7 @@ int main(int argc,char* argv[]){
     ftrl.run();
     std::vector<float> model;
     for(int j = 0; j < ld.glo_fea_dim; j++){
-	//std::cout<<"w["<< j << "]: "<<ftrl.loc_w[j]<<std::endl;
+	std::cout<<"w["<< j << "]: "<<ftrl.loc_w[j]<<std::endl;
 	model.push_back(ftrl.loc_w[j]);
     }
     Load_Data testdata;
