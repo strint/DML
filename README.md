@@ -1,10 +1,10 @@
 # DML
-factorization machine:
-  ftrl algorithm
-  
-logisit regression:
+#logisit regression:
   ftrl algorithm
   owl-qn algorithm
-  
-mpi-eval:
+#factorization machine:
+  ftrl algorithm
+#gbdt:
+  todo  
+#mpi-eval:
   calculate auc parallel
