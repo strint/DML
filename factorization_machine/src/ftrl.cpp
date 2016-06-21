@@ -64,9 +64,9 @@ void FTRL::init(){
     lambda1 = 0.0;
     lambda2 = 1.0;
     
-    step = 100;
-    batch_size = 10;
-    bias = 1;
+    step = 200;
+    batch_size = 1;
+    bias = 2.0;
 }
 
 float FTRL::sigmoid(float x){
@@ -79,7 +79,6 @@ float FTRL::sigmoid(float x){
 }
 
 void FTRL::update_other_parameter(){
-    std::cout<<"update_other_parameter"<<std::endl;
     MPI_Status status;
     if(rank != 0){
 	MPI_Send(loc_g_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD);
@@ -179,7 +178,6 @@ void FTRL::update_parameter(){
         update_w();
         update_v();
         for(int r = 1; r < num_proc; r++){
-            std::cout<<"master node send loc_w and loc_v to worker node "<<r<<std::endl;
             MPI_Send(loc_w, data->glo_fea_dim, MPI_FLOAT, r, 99, MPI_COMM_WORLD);
             MPI_Send(loc_v, data->glo_fea_dim*factor, MPI_FLOAT, r, 999, MPI_COMM_WORLD);
         }
@@ -238,7 +236,6 @@ void FTRL::ftrl(){
     	}
 	update_g();
         update_other_parameter();     
-	std::cout<<"end one step"<<std::endl;
     }//end for
 }
 

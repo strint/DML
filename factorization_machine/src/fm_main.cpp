@@ -38,7 +38,7 @@ int main(int argc,char* argv[]){
     Load_Data testdata;
     testdata.load_data(test_data_path, split_tag, rank, nproc);
     Predict p(&testdata, nproc, rank);
-    //p.predict(model);
+    p.predict(model);
    
     MPI::Finalize();
     return 0;
