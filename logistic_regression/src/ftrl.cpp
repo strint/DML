@@ -20,10 +20,10 @@ void FTRL::init(){
     beta = 1.0;
     lambda1 = 0.0;
     lambda2 = 1.0;
-    bias = 1.0; 
+    bias = 0.1; 
 
-    step = 10;
-    batch_size = 10;
+    step = 1000;
+    batch_size = 2;
 }
 
 float FTRL::sigmoid(float x){
@@ -78,7 +78,6 @@ void FTRL::ftrl(){
     MPI_Status status;
     int index = 0, row = 0; float value = 0.0, pctr = 0.0;
     for(int i = 0; i < step; i++){
-	std::cout<<"step "<<i<<std::endl;
         row = i * batch_size;
         if(rank == 0){
             update_w();

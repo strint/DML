@@ -1,1 +1,1 @@
-Distributed LR With MPI
+Distributed FM With MPI, FTRL algorithm
