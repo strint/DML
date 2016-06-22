@@ -2,7 +2,7 @@
 #include <fstream>
 #include "predict.h"
 
-Predict::Predict(Load_Data* ld, int total_num_proc, int my_rank) : data(ld), num_proc(total_num_proc), rank(my_rank){
+Predict::Predict(Load_Data* load_data, int total_num_proc, int my_rank) : data(load_data), num_proc(total_num_proc), rank(my_rank){
 
 }
 Predict::~Predict(){}
