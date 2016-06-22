@@ -30,7 +30,7 @@ int main(int argc,char* argv[]){
     load_data.load_data(train_data_path, split_tag, rank, nproc);
     //std::cout<<ld.fea_matrix.size()<<std::endl;    
     std::vector<float> model;
-    if (strcmp(argv[1], "owlqn")){
+    if (strcmp(argv[1], "owlqn") == 0){
         OWLQN owlqn(&load_data, nproc, rank);
         owlqn.run();
         for(int j = 0; j < load_data.glo_fea_dim; j++){
@@ -38,7 +38,7 @@ int main(int argc,char* argv[]){
             model.push_back(owlqn.glo_w[j]);
         }
     }
-    else if(strcmp(argv[1], "ftrl")){
+    else if(strcmp(argv[1], "ftrl") == 0){
         FTRL ftrl(&load_data, nproc, rank);
         ftrl.run();
         for(int j = 0; j < load_data.glo_fea_dim; j++){

@@ -1,7 +1,7 @@
 #include "ftrl.h"
 
-FTRL::FTRL(Load_Data* ld, int total_num_proc, int my_rank) 
-    : data(ld), num_proc(total_num_proc), rank(my_rank){
+FTRL::FTRL(Load_Data* load_data, int total_num_proc, int my_rank) 
+    : data(load_data), num_proc(total_num_proc), rank(my_rank){
     init();
 }
 FTRL::~FTRL(){}
@@ -22,7 +22,7 @@ void FTRL::init(){
     lambda2 = 1.0;
     bias = 1.0; 
 
-    step = 100;
+    step = 10;
     batch_size = 10;
 }
 
@@ -78,6 +78,7 @@ void FTRL::ftrl(){
     MPI_Status status;
     int index = 0, row = 0; float value = 0.0, pctr = 0.0;
     for(int i = 0; i < step; i++){
+	std::cout<<"step "<<i<<std::endl;
         row = i * batch_size;
         if(rank == 0){
             update_w();

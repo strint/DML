@@ -22,6 +22,7 @@ private:
   	int step;
 
 	float* loc_g;
+	//glo_g only for master node
 	float* glo_g;
         //parameters used only by master node
 	float* loc_z;
