@@ -129,14 +129,11 @@ void FTRL::update_v(){
      for(long int j = 0; j < data->glo_fea_dim; j++){
         for(int k = 0; k < factor; k++){
             float tmp_z = loc_z_v_arr[j][k];
-            std::cout<<j<<" "<<loc_z_v_arr[124][k]<<std::endl;
 	    continue;
             if(abs(tmp_z) <= lambda1){
                 loc_v_arr[j][k] = 0.0;
-		std::cout<<j<<" "<<loc_v_arr[j][k]<<std::endl;
             }
             else{
-	std::cout<<tmp_z<<std::endl;
                 float tmpr = 0.0;
                 if(tmp_z >= 0){
                     tmpr = tmp_z - lambda1;
@@ -145,7 +142,6 @@ void FTRL::update_v(){
                     tmpr = tmp_z + lambda1;
                 }
                 float tmpl = -1 * ( ( beta + sqrt(loc_n_v_arr[j][k]) ) / alpha  + lambda2);
-		std::cout<<tmpl<<std::endl;
                 loc_v_arr[j][k] = tmpr / tmpl;
             }
         }
@@ -172,7 +168,6 @@ void FTRL::update_parameter(){
     if(rank == 0){
         update_w();
         update_v();
-	//std::cout<<"after update_v"<<std::endl;
         for(int r = 1; r < num_proc; r++){
             MPI_Send(loc_w, data->glo_fea_dim, MPI_FLOAT, r, 99, MPI_COMM_WORLD);
             MPI_Send(loc_v, data->glo_fea_dim*factor, MPI_FLOAT, r, 999, MPI_COMM_WORLD);
@@ -182,9 +177,7 @@ void FTRL::update_parameter(){
 	MPI_Recv(glo_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD, &status);
         for(int j = 0; j < data->glo_fea_dim; j++){
             loc_w[j] = glo_w[j];
-            //std::cout<<loc_w[j]<<" ";
         }
-        //std::cout<<std::endl;
         MPI_Recv(glo_v, data->glo_fea_dim*factor, MPI_FLOAT, 0, 999, MPI_COMM_WORLD, &status);
         for(int j = 0; j < data->glo_fea_dim*factor; j++){
             loc_v[j] = glo_v[j];
@@ -197,7 +190,6 @@ void FTRL::ftrl(){
     MPI_Status status;
     long int index = 0; int value = 1; float pctr = 0.0;
     for(int i = 0; i < step; i++){
-	std::cout<<"step: "<<i<<std::endl;
         int row = i * batch_size;
 	loss_sum = 0.0;
  	update_parameter();
