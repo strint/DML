@@ -13,13 +13,13 @@ extern "C"{
 #include <cblas.h>
 }
 
-LR::LR(Load_Data* ld, int total_num_proc, int my_rank) 
+OWLQN::OWLQN(Load_Data* ld, int total_num_proc, int my_rank) 
     : data(ld), num_proc(total_num_proc), rank(my_rank) {
 
     init();
 }
 
-LR::~LR(){
+OWLQN::~OWLQN(){
     delete[] glo_w; 
     delete[] glo_new_w;
 
@@ -45,7 +45,7 @@ LR::~LR(){
     delete[] glo_ro_list;
 }
 
-float LR::gaussrand(){
+float OWLQN::gaussrand(){
     static double V1, V2, S;
     static int phase = 0;
     double X;
@@ -67,7 +67,7 @@ float LR::gaussrand(){
     return X;
 }
 
-void LR::init(){
+void OWLQN::init(){
     c = 1.0;
 
     glo_w = new double[data->glo_fea_dim]();
@@ -120,7 +120,7 @@ void LR::init(){
     step = 0;
 }
 
-void LR::calculate_z() {
+void OWLQN::calculate_z() {
     size_t idx = 0;
     double val = 0;
     for(int i = 0; i < data->loc_ins_num; i++) {
@@ -133,7 +133,7 @@ void LR::calculate_z() {
     }
 }
 
-double LR::sigmoid(double x){
+double OWLQN::sigmoid(double x){
     if(x < -30){
         return 1e-6;
     }
@@ -146,7 +146,7 @@ double LR::sigmoid(double x){
     }
 }
 
-double LR::calculate_loss(double *para_w){
+double OWLQN::calculate_loss(double *para_w){
     double f = 0.0, val = 0.0, wx = 0.0, single_loss = 0.0, regular_loss = 0.0;
     int index;
     for(int i = 0; i < data->fea_matrix.size(); i++){
@@ -167,7 +167,7 @@ double LR::calculate_loss(double *para_w){
     return -f / data->fea_matrix.size() + regular_loss;
 }
 
-void LR::calculate_gradient(){
+void OWLQN::calculate_gradient(){
     int index, single_feature_num;
     double value;
     int instance_num = data->fea_matrix.size();
@@ -193,7 +193,7 @@ void LR::calculate_gradient(){
     }*/
 }
 
-void LR::calculate_subgradient(){
+void OWLQN::calculate_subgradient(){
     if(c == 0.0){
         for(int j = 0; j < data->glo_fea_dim; j++){
             *(glo_sub_g + j) = -1 * *(glo_g + j);
@@ -226,7 +226,7 @@ void LR::calculate_subgradient(){
     }*/
 }
 
-void LR::fix_dir_glo_q(){
+void OWLQN::fix_dir_glo_q(){
     /*
     for(int j = 0; j < data->glo_fea_dim; j++){
 	//if(rank == 0) std::cout<<"glo_q["<<j<<"]"<<glo_q[j]<<std::endl;
@@ -245,14 +245,14 @@ void LR::fix_dir_glo_q(){
     */
 }
 
-void LR::fix_dir_glo_new_w(){
+void OWLQN::fix_dir_glo_new_w(){
     for(int j = 0; j < data->glo_fea_dim; j++){
         if(*(glo_new_w + j) * *(glo_w + j) >=0) *(glo_new_w + j) = 0.0;
         else *(glo_new_w + j) = *(glo_new_w + j);
     }
 }
 
-void LR::line_search(){
+void OWLQN::line_search(){
     MPI_Status status;
     while(true){
 	if(rank == MASTERID){
@@ -293,7 +293,7 @@ void LR::line_search(){
     }
 }
 
-void LR::two_loop(){
+void OWLQN::two_loop(){
     cblas_dcopy(data->glo_fea_dim, glo_sub_g, 1, glo_q, 1);
     /*for(int i = 0; i < data->glo_fea_dim; i++){
 	if(rank == 0) std::cout<<glo_q[i]<<std::endl;
@@ -335,7 +335,7 @@ void LR::two_loop(){
     */
 }
 
-void LR::update_state(){
+void OWLQN::update_state(){
 
     //update lbfgs memory
     update_memory();//not distributed
@@ -352,7 +352,7 @@ void LR::update_state(){
     //update step count
     step++;
 }
-void LR::update_memory(){
+void OWLQN::update_memory(){
     //update slist
     cblas_daxpy(data->glo_fea_dim, -1, (double*)glo_w, 1, (double*)glo_new_w, 1);
     cblas_dcopy(data->glo_fea_dim, (double*)glo_new_w, 1, (double*)glo_s_list[now_m % m], 1);
@@ -362,12 +362,12 @@ void LR::update_memory(){
     now_m++;
 }
 
-bool LR::meet_criterion(){
+bool OWLQN::meet_criterion(){
     if(step == 300) return true;
     return false;
 }
 
-void LR::save_model(){
+void OWLQN::save_model(){
     if(0 == rank) {
         time_t rawtime;
         struct tm* timeinfo;
@@ -388,7 +388,7 @@ void LR::save_model(){
     }
 }
 
-void LR::owlqn(){
+void OWLQN::owlqn(){
     while(true){
 	MPI_Status status;
         calculate_gradient(); //distributed, calculate gradient is distributed
@@ -435,6 +435,6 @@ void LR::owlqn(){
     }*/
 }
 
-void LR::run(){
+void OWLQN::run(){
     owlqn();
 }

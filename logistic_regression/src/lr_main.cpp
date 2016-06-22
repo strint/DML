@@ -31,11 +31,11 @@ int main(int argc,char* argv[]){
     //std::cout<<ld.fea_matrix.size()<<std::endl;    
     std::vector<float> model;
     if (strcmp(argv[1], "owlqn")){
-        LR lr(&ld, nproc, rank);
-        lr.run();
+        OWLQN owlqn(&ld, nproc, rank);
+        owlqn.run();
         for(int j = 0; j < ld.glo_fea_dim; j++){
             //std::cout<<"w["<< j << "]: "<<ftrl.loc_w[j]<<std::endl;
-            model.push_back(lr.glo_w[j]);
+            model.push_back(owlqn.glo_w[j]);
         }
     }
     else if(strcmp(argv[1], "ftrl")){
