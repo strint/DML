@@ -9,7 +9,7 @@ class FTRL{
 public:
 	FTRL(Load_Data* data, int total_num_proc, int my_rank);
 	~FTRL();
-	int v_dim;
+	long int v_dim;
 	float* glo_w;
 	float* loc_w;
 	float* glo_v;

@@ -25,7 +25,7 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
 	if(sscanf(pline, "%d%n", &y, &nchar) >= 1){
 	    pline += nchar;
 	    label.push_back(y);
-	    while(sscanf(pline, "%d:%d%n", &index, &value, &nchar) >= 2){
+	    while(sscanf(pline, "%ld:%d%n", &index, &value, &nchar) >= 2){
 		pline += nchar;
 		sf.idx = index;
 	        if(sf.idx + 1 > loc_fea_dim) loc_fea_dim = sf.idx + 1;
@@ -44,10 +44,10 @@ void Load_Data::load_data(const char* data_file, std::string split_tag, int rank
     } else {
 	    if(loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    for(int i = 1; i < nproc; i++){
-            //LOG(INFO) << "process " << rank <<" revc process "<< i << std::endl;
-            long int other_loc_fea_dim;
+                //LOG(INFO) << "process " << rank <<" revc process "<< i << std::endl;
+                long int other_loc_fea_dim;
 	        MPI_Recv(&other_loc_fea_dim, 1, MPI_INT, i, FEA_DIM_FLAG, MPI_COMM_WORLD, &status);
-            //LOG(INFO) << "process "<< rank <<" revc process " << i << " over" << std::endl;
+                //LOG(INFO) << "process "<< rank <<" revc process " << i << " over" << std::endl;
 	        if(other_loc_fea_dim > glo_fea_dim) glo_fea_dim = loc_fea_dim;
 	    }
     }

@@ -25,19 +25,18 @@ int main(int argc,char* argv[]){
     snprintf(test_data_path, 1024, "%s-%05d", test_data_file, rank);
 
     std::string split_tag = " ";
-    Load_Data ld; 
-    ld.load_data(train_data_path, split_tag, rank, nproc);
+    Load_Data load_data; 
+    load_data.load_data(train_data_path, split_tag, rank, nproc);
     //std::cout<<ld.fea_matrix.size()<<std::endl;    
-    FTRL ftrl(&ld, nproc, rank);
+    FTRL ftrl(&load_data, nproc, rank);
     ftrl.run();
     std::vector<float> model;
-    for(int j = 0; j < ld.glo_fea_dim; j++){
+    for(int j = 0; j < load_data.glo_fea_dim; j++){
 	std::cout<<"w["<< j << "]: "<<ftrl.loc_w[j]<<std::endl;
 	model.push_back(ftrl.loc_w[j]);
     }
-    Load_Data testdata;
-    testdata.load_data(test_data_path, split_tag, rank, nproc);
-    Predict p(&testdata, nproc, rank);
+    load_data.load_data(test_data_path, split_tag, rank, nproc);
+    Predict p(&load_data, nproc, rank);
     p.predict(model);
    
     MPI::Finalize();

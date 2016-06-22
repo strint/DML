@@ -66,7 +66,7 @@ void FTRL::update_w(){
         }
         else{
             float tmpr= 0.0;
-            if(loc_z[col] > 0) tmpr = loc_z[col] - lambda1;
+            if(loc_z[col] >= 0) tmpr = loc_z[col] - lambda1;
             else tmpr = loc_z[col] + lambda1;
             float tmpl = -1 * ( ( beta + sqrt(loc_n[col]) ) / alpha  + lambda2);
             loc_w[col] = tmpr / tmpl;
