@@ -12,9 +12,10 @@ Load_Data::~Load_Data(){}
 void Load_Data::load_data(const char* data_file, std::string split_tag, int rank, int nproc){
     MPI_Status status;
     std::ifstream fin(data_file, std::ios::in);
-    LOG(INFO) << "process " << rank << " read "<< data_file << std::endl;
+    //LOG(INFO) << "process " << rank << " read "<< data_file << std::endl;
     if(!fin.is_open()) {
-        LOG(ERROR) << "process "<< rank << " open file error: " << data_file << std::endl;
+	std::cout<<"hi file wrong"<<data_file<<std::endl;
+        //LOG(ERROR) << "process "<< rank << " open file error: " << data_file << std::endl;
         exit(1);
     }
 
