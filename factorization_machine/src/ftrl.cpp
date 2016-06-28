@@ -1,4 +1,5 @@
 #include "ftrl.h"
+#include <stdlib.h>
 #define factor 2
 
 FTRL::FTRL(Load_Data* load_data, int total_num_proc, int my_rank) 
@@ -193,6 +194,7 @@ void FTRL::ftrl(){
         int row = i * batch_size;
 	loss_sum = 0.0;
  	update_parameter();
+std::cout<<"step "<<i<<std::endl;
 	while( (row < (i + 1) * batch_size) && (row < data->fea_matrix.size()) ){
 	    float wx = bias;
 	    for(int col = 0; col < data->fea_matrix[row].size(); col++){//for one instance
@@ -213,8 +215,11 @@ void FTRL::ftrl(){
 		wx += vxvx * 1.0 / 2;	
             }
 	    pctr = sigmoid(wx);
+            //std::cout<<"pctr "<<pctr<<std::endl;
 	    loss_sum = (pctr - data->label[row]);
+            //std::cout<<"loss_sum "<<loss_sum<<std::endl;
 	    for(int l = 0; l < data->glo_fea_dim; l++){
+		//std::cout<<"l = "<<l<<"\tglo_fea_dim ="<<data->glo_fea_dim<<std::endl;
 	        loc_g_w[l] += loss_sum * value;
 	        float vx = 0;
  		for(int k = 0; k < factor; k++){
@@ -224,6 +229,7 @@ void FTRL::ftrl(){
                     loc_g_v_arr[l][k] += loss_sum * vx;
 		}	
 	    }
+//std::cout<<row<<std::endl;
 	    ++row;
     	}
         update_other_parameter();     

@@ -4,7 +4,6 @@
 #include "ftrl.h"
 #include "mpi.h"
 //#include "gtest/gtest.h"
-#include <glog/logging.h>
 #include "config.h"
 
 int main(int argc,char* argv[]){  
@@ -13,9 +12,8 @@ int main(int argc,char* argv[]){
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&nproc);
     // Initialize Google's logging library.
-    google::InitGoogleLogging(argv[0]);
-    FLAGS_log_dir = "./log";
-    LOG(INFO) << "my process rank: "<< rank <<", totoal process num: "<< nproc <<std::endl;
+    //google::InitGoogleLogging(argv[0]);
+   // FLAGS_log_dir = "./log";
 
     char train_data_path[1024];
     const char *train_data_file = argv[1];

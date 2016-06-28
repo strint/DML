@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string>
 #include <cmath>
-#include <glog/logging.h>
+//#include <glog/logging.h>
 #include "load_data.h"
 #include "stdlib.h"
 
