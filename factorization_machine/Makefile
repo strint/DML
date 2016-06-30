@@ -17,6 +17,5 @@ ftrl.o: src/ftrl.cpp
 predict.o: src/predict.cpp
 	/home/xiaoshu/hadoop_job/bin/mpicxx -I ./include -c src/predict.cpp
 
-
 clean:
 	rm -f *~ train predict *.o

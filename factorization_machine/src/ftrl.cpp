@@ -65,7 +65,7 @@ void FTRL::init(){
     lambda1 = 0.0;
     lambda2 = 1.0;
     
-    step = 200;
+    step = 5;
     batch_size = 1;
     bias = 2.0;
 }
@@ -194,7 +194,7 @@ void FTRL::ftrl(){
         int row = i * batch_size;
 	loss_sum = 0.0;
  	update_parameter();
-std::cout<<"step "<<i<<std::endl;
+        std::cout<<"step "<<i<<std::endl;
 	while( (row < (i + 1) * batch_size) && (row < data->fea_matrix.size()) ){
 	    float wx = bias;
 	    for(int col = 0; col < data->fea_matrix[row].size(); col++){//for one instance
@@ -224,6 +224,7 @@ std::cout<<"step "<<i<<std::endl;
 	        float vx = 0;
  		for(int k = 0; k < factor; k++){
 		    for(int j = 0; j != l && j < data->glo_fea_dim; j++){
+			if(loc_v_arr[j][k] == 0.0) continue;
 			vx +=  loc_v_arr[j][k] * value;
 		    }
                     loc_g_v_arr[l][k] += loss_sum * vx;
