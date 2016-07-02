@@ -24,9 +24,8 @@ int main(int argc,char* argv[]){
 
     std::string split_tag = " ";
     Load_Data load_data; 
-    load_data.load_data(train_data_path, split_tag, rank, nproc);
-    //std::cout<<ld.fea_matrix.size()<<std::endl;    
-    FTRL ftrl(&load_data, nproc, rank);
+    load_data.load_data(train_data_pa, split_tag, rank, nproc);
+    FTRL ftrl(&load_data);
     ftrl.run();
     std::vector<float> model;
     for(int j = 0; j < load_data.glo_fea_dim; j++){

@@ -11,7 +11,7 @@ struct sparse_feature{
 };
 
 class Load_Data {
-private:
+public:
     std::ifstream fin_;
     std::vector<std::vector<sparse_feature> > fea_matrix;
     std::vector<sparse_feature> key_val;
@@ -26,7 +26,7 @@ public:
 	fin_.open(file_name, std::ios::in);
     }
 
-    load_data_minibatch(const int num){
+    void load_data_minibatch(const int num){
         fea_matrix.clear();
     	for(int i = 0; i < num; i++){
 	    if(fin_.eof()) break;
@@ -45,7 +45,6 @@ public:
             }
             fea_matrix.push_back(key_val);
 	}
-	return fea_matrix;
     }
 
     ~Load_Data(){

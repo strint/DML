@@ -1,65 +1,60 @@
 #ifndef FTRL_H
 #define FTRL_H
 #include "load_data.h"
-#include "mpi.h"
+#include "ps/ps.h"
 #include <math.h>
 
 class FTRL{
 
 public:
-	FTRL(Load_Data* data, int total_num_proc, int my_rank);
+	sigmoid(float x) {
+	    if(x < -30) return 1e-6;
+    	    else if(x > 30) return 1.0;
+            else{
+                double ex = pow(2.718281828, x);
+                return ex / (1.0 + ex);
+            }
+	}
+
+	FTRL(Load_Data& batch_data) : data(batch_data){
+	    pctr_.resize(data->label.size());
+            keys.clear();
+            x = 0.0;
+            for(int i = 0; i < data.size(); i++){
+		wx = bias;
+	 	kv_->Wait(kv_->Pull(keys, &w));
+                for(int j = 0; j < data[i]; j++){
+                    key = data[i][j].idx;
+                    x = data[i][j].val;
+                    keys.push_back(key);
+		    wx += w[key] * x; 
+                    X_.push_back(value);
+                    XX_.push_back(value*vaule);
+                }
+		calcgrad();
+	    }
+ 	}
 	~FTRL();
-	long int v_dim;
-	float* glo_w;
-	float* loc_w;
-	float* glo_v;
-	float** glo_v_arr;
-	float* loc_v;
-	float** loc_v_arr;
+        calcgrad(){
+	    float pctr = sigmoid(wx);  
+	    
+	}
+	} 
         void run();
 private:
 	Load_Data* data;
-	void init();
-	float sigmoid(float x);
-	void update_parameter();
-	void update_v();
-	void update_w();
-	void sync_parameters();
-	void update_g();
-        void update_other_parameter();
-	void ftrl();
-  	int step;
-       
-	float* temp_value; 
-        float* loc_f_val;
-	float* loc_g_w;
-	float* glo_g_w;
-	float* loc_g_v;
-	float** loc_g_v_arr;
-	float* glo_g_v;
-	float** glo_g_v_arr;
+	ps::KVWorker<float> * kv_;
+	std::vector<long int> keys;
+	float bias = 0.0;
+	float wx;
+	long int key;
+	float x;
+	std::vector<float> w;
+	std::vector<float> v;
+  	std::vector<float> pctr_;
+        std::vector<float> X_, XX_;
 
-	float* loc_z_w;
-	float* loc_sigma_w;
-	float* loc_n_w;
- 	float* loc_z_v;
-	float** loc_z_v_arr;
-	float* loc_sigma_v;
-	float** loc_sigma_v_arr;
-	float* loc_n_v;
-	float** loc_n_v_arr;
-
-	float factor;
-	float alpha;
-	float beta;
-	float lambda1;
-	float lambda2;
-	int batch_size;
-	float bias;
-	
-	float loss_sum;
-	int num_proc;
-	int rank;
+        int k;
 };
 
 #endif
