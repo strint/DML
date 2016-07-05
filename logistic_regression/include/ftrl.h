@@ -22,18 +22,19 @@ private:
   	int step;
 
 	float* loc_g;
+	//glo_g only for master node
 	float* glo_g;
-
+        //parameters used only by master node
 	float* loc_z;
 	float* loc_sigma;
 	float* loc_n;
-
 	float alpha;
 	float beta;
 	float lambda1;
 	float lambda2;
 	int batch_size;
-
+	float bias;
+  	//	
 	int num_proc;
 	int rank;
 };

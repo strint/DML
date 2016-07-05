@@ -8,13 +8,13 @@ Predict::Predict(Load_Data* ld, int total_num_proc, int my_rank) : data(ld), num
 Predict::~Predict(){}
 
 void Predict::predict(std::vector<float> glo_w){
-    float y = 0.0;
+    int y = 0.0;
     std::vector<float> predict_result;
     for(int i = 0; i < data->loc_ins_num; i++) {
-	float x = 0.0;
+	int x = 0.0;
         for(int j = 0; j < data->fea_matrix[i].size(); j++) {
             int idx = data->fea_matrix[i][j].idx;
-            float val = data->fea_matrix[i][j].val;
+            int val = data->fea_matrix[i][j].val;
             x += glo_w[idx] * val;
         }
         if(x < -30){
@@ -31,7 +31,7 @@ void Predict::predict(std::vector<float> glo_w){
     }
     for(size_t j = 0; j < predict_result.size(); j++){
         if(rank == 0){
-	     std::cout<<predict_result[j]<<"\t"<<1 - data->label[j]<<"\t"<<data->label[j]<<std::endl;
+	     std::cout<<predict_result[j]<<"\t"<<1 - data->label[j]<<"\t"<<data->label[j]<<"\t"<<rank<<std::endl;
 	}
     }
 }

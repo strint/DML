@@ -1,7 +1,7 @@
 #include "ftrl.h"
 
-FTRL::FTRL(Load_Data* ld, int total_num_proc, int my_rank) 
-    : data(ld), num_proc(total_num_proc), rank(my_rank){
+FTRL::FTRL(Load_Data* load_data, int total_num_proc, int my_rank) 
+    : data(load_data), num_proc(total_num_proc), rank(my_rank){
     init();
 }
 FTRL::~FTRL(){}
@@ -20,9 +20,10 @@ void FTRL::init(){
     beta = 1.0;
     lambda1 = 0.0;
     lambda2 = 1.0;
-    
-    step = 100;
-    batch_size = 10;
+    bias = 0.1; 
+
+    step = 1000;
+    batch_size = 2;
 }
 
 float FTRL::sigmoid(float x){
@@ -65,7 +66,7 @@ void FTRL::update_w(){
         }
         else{
             float tmpr= 0.0;
-            if(loc_z[col] > 0) tmpr = loc_z[col] - lambda1;
+            if(loc_z[col] >= 0) tmpr = loc_z[col] - lambda1;
             else tmpr = loc_z[col] + lambda1;
             float tmpl = -1 * ( ( beta + sqrt(loc_n[col]) ) / alpha  + lambda2);
             loc_w[col] = tmpr / tmpl;
@@ -75,29 +76,30 @@ void FTRL::update_w(){
 
 void FTRL::ftrl(){
     MPI_Status status;
+    int index = 0, row = 0; float value = 0.0, pctr = 0.0;
     for(int i = 0; i < step; i++){
-        int row = i * batch_size, index;
+        row = i * batch_size;
         if(rank == 0){
             update_w();
-            for(int rank = 1; rank < num_proc; rank++){
-                MPI_Send(loc_w, data->glo_fea_dim, MPI_FLOAT, rank, 99, MPI_COMM_WORLD);
+            for(int r = 1; r < num_proc; r++){
+                MPI_Send(loc_w, data->glo_fea_dim, MPI_FLOAT, r, 99, MPI_COMM_WORLD);
             }
         }
         else if(rank != 0){
             MPI_Recv(glo_w, data->glo_fea_dim, MPI_FLOAT, 0, 99, MPI_COMM_WORLD, &status);
-            for(int w_idx = 0; w_idx < data->glo_fea_dim; w_idx++){
-                loc_w[w_idx] = glo_w[w_idx];
+            for(int j = 0; j < data->glo_fea_dim; j++){
+                loc_w[j] = glo_w[j];
             }
         }
 	while( (row < (i + 1) * batch_size) && (row < data->fea_matrix.size()) ){
-	    float wx = 0.0, p = 0.0, value = 0.0;
-	    for(int col = 0; col < data->fea_matrix[row].size(); col++){
+	    float wx = bias;
+	    for(int col = 0; col < data->fea_matrix[row].size(); col++){//for one instance
 	  	index = data->fea_matrix[row][col].idx;
 	        value = data->fea_matrix[row][col].val;
 	        wx += loc_w[index] * value;
             }
-	    p = sigmoid(wx);
-            loc_g[index] += (p - data->label[row]) * value;
+	    pctr = sigmoid(wx);
+            loc_g[index] += (pctr - data->label[row]) * value;
             ++row;
         } 
 	for(int col = 0; col < data->glo_fea_dim; ++col){

@@ -1,5 +1,5 @@
-#ifndef LR_H_
-#define LR_H_
+#ifndef OWLQN_H_
+#define OWLQN_H_
 
 #include <string>
 #include <fstream>
@@ -13,11 +13,11 @@
 #include "load_data.h"
 #define MASTERID 0
 
-class LR{
+class OWLQN{
 
 public:
-    LR(Load_Data* data, int total_num_proc, int my_rank);
-    ~LR();
+    OWLQN(Load_Data* data, int total_num_proc, int my_rank);
+    ~OWLQN();
     void run();
     double* glo_w; //global model parameter
 
@@ -93,5 +93,5 @@ private:
     double sigmoid(double x);
     void update_memory();
 };
-#endif // LR_H_
+#endif // OWLQN_H_
 

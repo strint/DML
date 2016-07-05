@@ -2,13 +2,12 @@
 #include <fstream>
 #include "predict.h"
 
-Predict::Predict(Load_Data* ld, int total_num_proc, int my_rank) : data(ld), num_proc(total_num_proc), rank(my_rank){
+Predict::Predict(Load_Data* load_data, int total_num_proc, int my_rank) : data(load_data), num_proc(total_num_proc), rank(my_rank){
 
 }
 Predict::~Predict(){}
 
 void Predict::predict(std::vector<float> glo_w){
-    float y = 0.0;
     std::vector<float> predict_result;
     for(int i = 0; i < data->loc_ins_num; i++) {
 	float x = 0.0;
@@ -18,16 +17,16 @@ void Predict::predict(std::vector<float> glo_w){
             x += glo_w[idx] * val;
         }
         if(x < -30){
-            y = 1e-6;
+            pctr = 1e-6;
         }
         else if(x > 30){
-            y = 1.0;
+            pctr = 1.0;
         }
         else{
             double ex = pow(2.718281828, x);
-            y = ex / (1.0 + ex);
+            pctr = ex / (1.0 + ex);
         }
-        predict_result.push_back(y);
+        predict_result.push_back(pctr);
     }
     for(size_t j = 0; j < predict_result.size(); j++){
         if(rank == 0){

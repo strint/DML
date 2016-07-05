@@ -7,4 +7,5 @@
 #mv core backup/"$tt"
 #make
 #rm log/*
-mpirun -np 4 ./train ./data/agaricus.txt.train ./data/agaricus.txt.test
+/home/xiaoshu/hadoop_job/bin/mpirun -np 4 ./train /home/xiaoshu/hadoop_job/newsToNewsModel/relative_news/gbdt_click/feature/onehot_encoding/libsvm_train_onehotencoding.data  /home/xiaoshu/hadoop_job/newsToNewsModel/relative_news/gbdt_click/feature/onehot_encoding/libsvm_test_onehotencoding.data
+#/home/xiaoshu/hadoop_job/bin/mpirun -np 2 ./train ./data/agaricus.txt.train ./data/agaricus.txt.test

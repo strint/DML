@@ -9,7 +9,7 @@ class FTRL{
 public:
 	FTRL(Load_Data* data, int total_num_proc, int my_rank);
 	~FTRL();
-	int v_dim;
+	long int v_dim;
 	float* glo_w;
 	float* loc_w;
 	float* glo_v;
@@ -21,13 +21,16 @@ private:
 	Load_Data* data;
 	void init();
 	float sigmoid(float x);
+	void update_parameter();
 	void update_v();
 	void update_w();
 	void sync_parameters();
+	void update_g();
         void update_other_parameter();
 	void ftrl();
   	int step;
-
+       
+	float* temp_value; 
         float* loc_f_val;
 	float* loc_g_w;
 	float* glo_g_w;
@@ -52,7 +55,9 @@ private:
 	float lambda1;
 	float lambda2;
 	int batch_size;
-
+	float bias;
+	
+	float loss_sum;
 	int num_proc;
 	int rank;
 };
