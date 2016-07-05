@@ -391,7 +391,7 @@ void OWLQN::owlqn(){
     while(true){
         MPI_Status status;
         calculate_gradient(); //distributed, calculate gradient is distributed
-        if(rank != 0){
+        if(rank != MASTERID){
             MPI_Send(loc_g, data->glo_fea_dim, MPI_DOUBLE, MASTERID, 99, MPI_COMM_WORLD);
         }
         else if(rank == MASTERID){
@@ -419,7 +419,7 @@ void OWLQN::owlqn(){
         fix_dir_glo_new_w();
 
         //std::cout<<step<<std::endl;
-        if(meet_criterion()) {//not distributed
+        if(meet_criterion()){//not distributed
             save_model();
             //std::cout<<step<<std::endl;
             break;

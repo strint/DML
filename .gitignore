@@ -1,0 +1,8 @@
+.DS_Store
+*.swp
+*.swo
+*.o
+mpi_eval
+train
+logistic_regression/log/*train*
+logistic_regression/model/lr_model_*
