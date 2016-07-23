@@ -1,11 +1,5 @@
 #include "ftrl.h"
 
-FTRL::FTRL(Load_Data* load_data) 
-    : data(load_data){
-    init();
-}
-FTRL::~FTRL(){}
-
 void FTRL::init(){
     alpha = 1.0;
     beta = 1.0;
@@ -24,7 +18,7 @@ float FTRL::sigmoid(float x){
     }
 }
 
-void FTRL::updateW(std::vector<ps::Key> &keys, std::vector<FTRLEntry>& entrys, std::vector<float> &g){
+/*void FTRL::updateW(std::vector<long int> &keys, std::vector<float>& w, std::vector<float> &g){
     for(int i = 0; i < keys.size(); i++){
 	float sqrt_n = entrys[i].sq_cum_grad;
 	float sqrt_n_new = sqrt(sqrt_n * sqrt_n + g[i] * g[i]);
@@ -42,13 +36,13 @@ void FTRL::updateW(std::vector<ps::Key> &keys, std::vector<FTRLEntry>& entrys, s
             entrys[i].w = tmpr / tmpl;
         }
     }
-    kv_->Wait(kv_->Push(keys, entrys));
 }
+*/
 
 void FTRL::run(){
     for(int i = 0; i < step; i++){
 	data->load_data_minibatch(1000);
-        std::vector<FTRLEntry> entrys;	    
+        std::vector<float> w;	    
         std::vector<float> g;
 	for(int i = 0; i < data->fea_matrix.size(); i++){
   	    std::vector<ps::Key> keys;
@@ -60,16 +54,15 @@ void FTRL::run(){
 	        float value = data->fea_matrix[i][j].val;
 		values.push_back(value);
             }
-	    kv_->Wait(kv_->Pull(keys, &entrys));
-	    for(int j = 0; j < entrys.size(); j++){
- 		wx += entrys[j].w * values[j];
+	    kv_->Wait(kv_->Pull(keys, &w));
+	    for(int j = 0; j < w.size(); j++){
+ 		wx += w[j] * values[j];
  	    } 
 	    float pctr = sigmoid(wx);
 	    g.resize(keys.size());
 	    for(int j = 0; j < keys.size(); j++){
                 g[j] += (pctr - data->label[i]) * values[j];
 	    }
-            updateW(keys, entrys, g);     
         }//end for
     }
 }

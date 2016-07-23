@@ -21,13 +21,12 @@ private:
 	ps::KVWorker<float>* kv_; 
 	void init();
 	float sigmoid(float x);
-	void updateW(std::vector<ps::Key>&, std::vector<FTRLEntry>&, std::vector<float>&);
-
-  	int step;
+	void updateW(std::vector<long int>&, std::vector<float>&, std::vector<float>&);
 	float alpha;
 	float beta;
 	float lambda1;
 	float lambda2;
+	int step;
 	float bias;
 };
 
