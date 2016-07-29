@@ -4,6 +4,8 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+namespace dmlc{
+namespace linear{
 
 struct sparse_feature{
     long int idx;
@@ -21,13 +23,18 @@ public:
     int y, value, nchar;
     long int index;
 
-public:
     Load_Data(const char * file_name){
 	fin_.open(file_name, std::ios::in);
+	if(!fin_.is_open()) {
+            std::cout << " open file error: " << file_name << std::endl;
+            exit(1);
+        }
     }
 
     void load_data_minibatch(const int num){
         fea_matrix.clear();
+	std::cout<<"load batch data start..."<<std::endl;
+
     	for(int i = 0; i < num; i++){
 	    if(fin_.eof()) break;
 	    std::getline(fin_, line);
@@ -40,6 +47,7 @@ public:
                     pline += nchar;
                     sf.idx = index;
                     sf.val = value;
+		    //std::cout<<index<<":"<<value<<std::endl;
                     key_val.push_back(sf);
                 }
             }
@@ -51,4 +59,6 @@ public:
         fin_.close();
     };
 };
-#endif
+
+}//end linear
+}//end dmlc
