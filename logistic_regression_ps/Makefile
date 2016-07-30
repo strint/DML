@@ -2,10 +2,10 @@
 #train code
 CPP = g++
 CPP_tag = -std=c++11
-INCLUDE = -I./include -I../lib/ps-lite/include
+INCLUDE = -I../lib/ps-lite/include
 
 lr_ftrl: lr_main.o ftrl.o ../lib/ps-lite/build/libps.a
-	$(CPP) $(CPP_tag) -o lr_ftrl lr_main.o ftrl.o ../lib/ps-lite/build/libps.a -L../lib/ps-lite/deps/lib/ -lprotobuf-lite -lzmq 
+	$(CPP) $(CPP_tag) -o lr_ftrl lr_main.o ftrl.o ../lib/ps-lite/build/libps.a -L../lib/ps-lite/deps/lib/ -lprotobuf-lite -lzmq
 
 lr_main.o: src/lr_main.cpp ../lib/ps-lite/build/libps.a
 	$(CPP) -c $(CPP_tag) src/lr_main.cpp $(INCLUDE)
