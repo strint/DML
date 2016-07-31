@@ -1,6 +1,5 @@
 #include <string>
 #include "load_data.h"
-#include "ftrl.h"
 #include "ps.h"
 
 namespace ps{

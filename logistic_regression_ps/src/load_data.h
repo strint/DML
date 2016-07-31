@@ -62,3 +62,4 @@ public:
 
 }//end linear
 }//end dmlc
+#endif
