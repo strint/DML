@@ -1,17 +1,17 @@
 #!/bin/bash
 #train code
 CPP = g++
-CPP_tag = -std=gnu++11
-INCLUDE = -I./include -I../lib/ps-lite/include
+CPP_tag = -std=c++11
+INCLUDE = -I../repo/ps-lite/include
 
-#lr_ftrl: lr_main.o ftrl.o load_data.o
-#	$(CPP) $(CPP_tag) -I./include -I../lib/ps-lite/include -o train lr_main.o ftrl.o
+#lr_ftrl: lr_main.o ftrl.o ../repo/ps-lite/build/libps.a
+#	$(CPP) $(CPP_tag) -o lr_ftrl lr_main.o ftrl.o ../repo/ps-lite/build/libps.a -L../repo/ps-lite/deps/lib/ -lprotobuf-lite -lzmq
 
-#lr_main.o: src/lr_main.cpp 
-#	$(CPP) $(CPP_tag) -c src/lr_main.cpp $(INCLUDE)
+lr_main.o: src/lr_main.cpp ../repo/ps-lite/build/libps.a
+	$(CPP) -c $(CPP_tag) src/lr_main.cpp $(INCLUDE)
 
-ftrl.o: src/ftrl.cpp
-	$(CPP) $(CPP_tag) -c src/ftrl.cpp $(INCLUDE)
+#ftrl.o: src/ftrl.cpp ../repo/ps-lite/build/libps.a
+#	$(CPP) -c $(CPP_tag) src/ftrl.cpp $(INCLUDE)
 
 clean:
 	rm -f *~ train
