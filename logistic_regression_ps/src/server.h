@@ -1,52 +1,51 @@
 #include "iostream"
+#include "/root/tiger/ml/dml/repo/ps-lite/include/ps/ps.h"
 
 namespace dmlc{
 namespace linear{
-
     struct ISGDHandle{
-        public:
-        ISGDHandle(){ ns_ = ps::NodeInfo::NumServers()}
-       
+      public:
+        ISGDHandle(){ ns_ = ps::NodeInfo::NumServers();}
         float alpha = 0.1, beta = 1.0;        
- 
-        private:
+      private:
         int ns_ = 0;
+        static int64_t new_w;
     };  
-  
     struct FTRLEntry{
         float w = 0;
         float z = 0;
         float sq_cum_grad = 0;
     };
-
     struct FTRLHandle : public ISGDHandle{
     public:
-        inline void Push(ps::Key key, Blob<const float> grad, FTRLEntry& val){
-            float sqrt_n = entrys[i].sq_cum_grad;
-                float sqrt_n_new = sqrt(sqrt_n * sqrt_n + g[i] * g[i]);
-                entrys[i].z += g[i] - (sqrt_n_new - sqrt_n);
-                entrys[i].sq_cum_grad = sqrt_n_new;
-                float z = entrys[i].z;
+        inline void Push(ps::Key key, ps::Blob<const float> grad, FTRLEntry& val){
+            float sqrt_n = val.sq_cum_grad;
+            float sqrt_n_new = sqrt(sqrt_n * sqrt_n + grad * grad);
+                val.z += grad - (sqrt_n_new - sqrt_n);
+                val.sq_cum_grad = sqrt_n_new;
+                float z = val.z;
                 if(abs(z) <= lambda1){
-                    entrys[i].w = 0.0;
+                    val.w = 0.0;
                 }
                 else{
                     float tmpr= 0.0;
                     if(z >= 0) tmpr = z - lambda1;
                     else tmpr = z + lambda1;
-                    float tmpl = -1 * ( ( beta + entrys[i].sq_cum_grad - sqrt_n) / alpha  + lambda2);
-                    entrys[i].w = tmpr / tmpl;
+                    float tmpl = -1 * ( ( beta + val.sq_cum_grad - sqrt_n) / alpha  + lambda2);
+                    val.w = tmpr / tmpl;
                 }
         }
+        int lambda1 = 1.0;
+        int lambda2 = 1.0;
     };
-
-    class SERVER : ps::App{
+    template <typename Entry, typename Handle>
+    class SERVER : public ps::App{
     public:
         SERVER(){
             CreateServer<FTRLEntry, FTRLHandle>();
         }
-        
         void CreateServer(){
+            Handle h;
             ps::OnlineServer<float, Entry, Handle> s(h);
         }
         ~SERVER(){}

@@ -1,6 +1,5 @@
-#include <string>
-#include "load_data.h"
-#include "ps.h"
+#include "server.h"
+#include "/root/tiger/ml/dml/repo/ps-lite/include/ps/ps.h"
 
 namespace ps{
   App* App::Create(int argc, char *argv[]){
@@ -11,18 +10,18 @@ namespace ps{
 
     NodeInfo n;
     if(n.IsWorker()){
-        return new WORKER(train_data_path);
+        return new ::dmlc::linear::WORKER(train_data_path);
     }else if(n.IsServer()){
-        return new SERVER();
+        return new ::dmlc::linear::SERVER();
     }else if(n.IsScheduler){
-        return new SCHEDULER();
+        return new ::dmlc::linear::SCHEDULER();
     }
     return NULL;
   }
-}
+}//namespace ps
 
 int64_t dmlc::linear::ISGDHandle::new_w = 0;
 
 int main(int argc,char *argv[]){  
-    retrun ps::RunSystem(&argc, &argv);
+    return ps::RunSystem(&argc, &argv);
 }
