@@ -1,5 +1,4 @@
 #!/bin/bash
-#train code
 CPP = g++
 CPP_tag = -std=c++11
 INCLUDE = -I../repo/ps-lite/include
