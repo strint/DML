@@ -63,6 +63,9 @@ namespace linear{
             Handle h;
             ps::OnlineServer<float, Entry, Handle> s(h);
         }
+	virtual void ProcessRequest(ps::Message* request) {
+	    
+	}
     };
 }//end linear
 }//end dmlc
