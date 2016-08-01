@@ -51,6 +51,7 @@ namespace linear{
         int lambda1 = 1.0;
         int lambda2 = 1.0;
     };
+
     class Server : public ps::App{
     public:
         Server(){

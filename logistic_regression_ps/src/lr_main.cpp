@@ -13,10 +13,13 @@ namespace ps{
 
     NodeInfo n;
     if(n.IsWorker()){
+	std::cout<<"create worker~"<<std::endl;
         return new ::dmlc::linear::Worker(train_data_path);
     }else if(n.IsServer()){
+	std::cout<<"create server~"<<std::endl;
         return new ::dmlc::linear::Server();
     }else if(n.IsScheduler){
+	std::cout<<"create scheduler~"<<std::endl;
         return new ::dmlc::linear::Scheduler();
     }
     return NULL;
