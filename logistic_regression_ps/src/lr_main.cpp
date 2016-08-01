@@ -10,11 +10,11 @@ namespace ps{
 
     NodeInfo n;
     if(n.IsWorker()){
-        return new ::dmlc::linear::WORKER(train_data_path);
+        return new ::dmlc::linear::Worker(train_data_path);
     }else if(n.IsServer()){
-        return new ::dmlc::linear::SERVER();
+        return new ::dmlc::linear::Server();
     }else if(n.IsScheduler){
-        return new ::dmlc::linear::SCHEDULER();
+        return new ::dmlc::linear::Scheuler();
     }
     return NULL;
   }

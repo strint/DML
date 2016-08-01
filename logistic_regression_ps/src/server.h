@@ -7,6 +7,10 @@ namespace linear{
       public:
         ISGDHandle(){ ns_ = ps::NodeInfo::NumServers();}
         float alpha = 0.1, beta = 1.0;        
+	inline void Start(bool push, int timestamp, int cmd, void* msg) { }//must has
+        void Load(Stream* fi) { }//must has
+        void Save(Stream *fo) const { }//must has
+	inline void Finish(){ }//must has
       private:
         int ns_ = 0;
         static int64_t new_w;
@@ -15,6 +19,9 @@ namespace linear{
         float w = 0;
         float z = 0;
         float sq_cum_grad = 0;
+        inline void Load(Stream *fi) { }//must has
+        inline void Save(Stream *fo) const { }//must has
+        inline bool Empty() const { }i//must has
     };
     struct FTRLHandle : public ISGDHandle{
     public:
@@ -36,20 +43,25 @@ namespace linear{
                     val.w = tmpr / tmpl;
                 }
         }
+
+	inline void Pull(ps::Key key, const FTRLEntry& val, ps::Blob<float>& send){
+	    send[0] = val.w;
+	}
+    private:
         int lambda1 = 1.0;
         int lambda2 = 1.0;
     };
-    template <typename Entry, typename Handle>
-    class SERVER : public ps::App{
+    class Server : public ps::App{
     public:
-        SERVER(){
+        Server(){
             CreateServer<FTRLEntry, FTRLHandle>();
         }
+	~Server(){}
+        template <typename Entry, typename Handle>
         void CreateServer(){
             Handle h;
             ps::OnlineServer<float, Entry, Handle> s(h);
         }
-        ~SERVER(){}
     };
 }//end linear
 }//end dmlc

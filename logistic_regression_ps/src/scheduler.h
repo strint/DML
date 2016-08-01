@@ -3,9 +3,10 @@
 namespace dmlc{
 namespace linear{
 
-  class SCHEDULER{
+  class Scheduler{
     public:
-        SCHEDULER(){}
+        Scheduler(){}
+        ~Scheduler(){}
   };
 
 }//end linear

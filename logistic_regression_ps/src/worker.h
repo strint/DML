@@ -1,15 +1,17 @@
 #include <iostream>
 #include "load_data.h"
 
+namespace dmlc{
+namespace linear{
 struct DataParCmd{
     DataParCmd
 };
 
-class WORKER : public ps::App{
+class Worker : public ps::App{
     public:
-        WORKER(const char *file_path) : data_path(file_path){
+        Worker(const char *file_path) : data_path(file_path){
         }
-        ~WORKER(){} 
+        ~Worker(){} 
         
         virtual void ProcessResponse(ps::Message* response){
             Process();
@@ -63,3 +65,6 @@ class WORKER : public ps::App{
     ps::Worker<float> kv_;
 }
 
+
+}
+}
