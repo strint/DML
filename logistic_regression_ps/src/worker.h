@@ -1,17 +1,22 @@
 #include <iostream>
 #include "load_data.h"
+#include "ps.h"
 
-struct DataParCmd{
-    DataParCmd
-};
+namespace dmlc{
+namespace linear{
 
-class WORKER : public ps::App{
+//struct DataParCmd{
+//    DataParCmd
+//};
+
+class Worker : public ps::App{
     public:
-        WORKER(const char *file_path) : data_path(file_path){
+        Worker(const char *file_path){
+	    Load_Data ld(file_path);
+            data = &ld;
         }
-        ~WORKER(){} 
-        
-        virtual void ProcessResponse(ps::Message* response){
+        ~Worker(){} 
+        virtual void ProcessRequest(ps::Message* request){
             Process();
         }
         float sigmoid(float x){
@@ -22,10 +27,9 @@ class WORKER : public ps::App{
                 return ex / (1.0 + ex);
             }
         }
-        
         void Process(){
             for(int i = 0; i < step; i++){
-                load_data->load_data_minibatch(1000);
+                data->load_data_minibatch(1000);
                 std::vector<float> w;
                 std::vector<float> g;
                 std::vector<ps::Key> keys;
@@ -39,7 +43,7 @@ class WORKER : public ps::App{
                         float value = data->fea_matrix[i][j].val;
                         values.push_back(value);
                     }
-                    kv_->Wait(kv_->Pull(keys, &w));
+                    kv_.Wait(kv_.Pull(keys, &w));
                     for(int j = 0; j < w.size(); j++){
                         wx += w[j] * values[j];
                     }
@@ -51,15 +55,17 @@ class WORKER : public ps::App{
                 }//end for
             }
         }
-
-    const char *data_path;
-    Load_Data load_data(data_path);
+	
+    Load_Data *data;
     float alpha = 1.0;
     float beta = 1.0;
     float lambda1 = 0.0;
     float lambda2 = 1.0;
     float bias = 0.1;
     int step = 1000;
-    ps::Worker<float> kv_;
-}
+    ps::KVWorker<float> kv_;
+};
 
+
+}
+}

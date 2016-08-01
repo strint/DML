@@ -1,5 +1,8 @@
+#include "worker.h"
 #include "server.h"
-#include "/root/tiger/ml/dml/repo/ps-lite/include/ps/ps.h"
+#include "scheduler.h"
+
+#include "ps.h"
 
 namespace ps{
   App* App::Create(int argc, char *argv[]){
@@ -10,14 +13,18 @@ namespace ps{
 
     NodeInfo n;
     if(n.IsWorker()){
-        return new ::dmlc::linear::WORKER(train_data_path);
+	std::cout<<"create worker~"<<std::endl;
+        return new ::dmlc::linear::Worker(train_data_path);
     }else if(n.IsServer()){
-        return new ::dmlc::linear::SERVER();
+	std::cout<<"create server~"<<std::endl;
+        return new ::dmlc::linear::Server();
     }else if(n.IsScheduler){
-        return new ::dmlc::linear::SCHEDULER();
+	std::cout<<"create scheduler~"<<std::endl;
+        return new ::dmlc::linear::Scheduler();
     }
     return NULL;
   }
+
 }//namespace ps
 
 int64_t dmlc::linear::ISGDHandle::new_w = 0;
