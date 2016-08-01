@@ -16,7 +16,7 @@ class Worker : public ps::App{
             data = &ld;
         }
         ~Worker(){} 
-        virtual void ProcessResponse(ps::Message* response){
+        virtual void ProcessRequest(ps::Message* request){
             Process();
         }
         float sigmoid(float x){
