@@ -119,7 +119,7 @@ void OWLQN::init(){
     step = 0;
 }
 
-void OWLQN::calculate_z() {
+void OWLQN::calculate_z(){
     size_t idx = 0;
     double val = 0;
     for(int i = 0; i < data->loc_ins_num; i++) {
@@ -261,12 +261,12 @@ void OWLQN::line_search(){
             for(int i = 1; i < num_proc; i++){
                 MPI_Send(glo_new_w, data->glo_fea_dim, MPI_DOUBLE, i, 99, MPI_COMM_WORLD);
             }
-        }
-        else if(rank != MASTERID){
+        } else if(rank != MASTERID){
             for(int i = 1; i < num_proc; i++){
                 MPI_Recv(glo_new_w, data->glo_fea_dim, MPI_DOUBLE, i, 99, MPI_COMM_WORLD, &status);
             }
         }
+
         loc_new_loss = calculate_loss(glo_new_w);//cal new loss per thread
         if(rank != MASTERID){
             MPI_Send(&loc_new_loss, data->glo_fea_dim, MPI_FLOAT, 0, 9999, MPI_COMM_WORLD);
@@ -393,8 +393,7 @@ void OWLQN::owlqn(){
         calculate_gradient(); //distributed, calculate gradient is distributed
         if(rank != MASTERID){
             MPI_Send(loc_g, data->glo_fea_dim, MPI_DOUBLE, MASTERID, 99, MPI_COMM_WORLD);
-        }
-        else if(rank == MASTERID){
+        } else if(rank == MASTERID){
             for(int i = 1; i < num_proc; i++){
                 MPI_Recv(glo_g, data->glo_fea_dim, MPI_DOUBLE, i, 99, MPI_COMM_WORLD, &status);
             }
