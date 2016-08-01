@@ -11,7 +11,9 @@ namespace linear{
 
 class Worker : public ps::App{
     public:
-        Worker(const char *file_path) : data(Load_Data(file_path)){
+        Worker(const char *file_path){
+	    Load_Data ld(file_path);
+            data = &ld;
         }
         ~Worker(){} 
         virtual void ProcessResponse(ps::Message* response){
@@ -53,7 +55,7 @@ class Worker : public ps::App{
                 }//end for
             }
         }
-
+	
     Load_Data *data;
     float alpha = 1.0;
     float beta = 1.0;
