@@ -1,5 +1,5 @@
 #include "server.h"
-#include "/root/tiger/ml/dml/repo/ps-lite/include/ps/ps.h"
+#include "ps.h"
 
 namespace ps{
   App* App::Create(int argc, char *argv[]){

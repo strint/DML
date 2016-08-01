@@ -1,7 +1,7 @@
 #!/bin/bash
 CPP = g++
 CPP_tag = -std=c++11
-INCLUDE = -I../repo/ps-lite/include
+INCLUDE = -I../repo/ps-lite/src -I../repo/ps-lite/deps/include
 
 #lr_ftrl: lr_main.o ftrl.o ../repo/ps-lite/build/libps.a
 #	$(CPP) $(CPP_tag) -o lr_ftrl lr_main.o ftrl.o ../repo/ps-lite/build/libps.a -L../repo/ps-lite/deps/lib/ -lprotobuf-lite -lzmq

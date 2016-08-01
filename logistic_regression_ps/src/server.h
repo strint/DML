@@ -1,5 +1,5 @@
 #include "iostream"
-#include "/root/tiger/ml/dml/repo/ps-lite/include/ps/ps.h"
+#include "ps.h"
 
 namespace dmlc{
 namespace linear{
@@ -19,9 +19,10 @@ namespace linear{
     struct FTRLHandle : public ISGDHandle{
     public:
         inline void Push(ps::Key key, ps::Blob<const float> grad, FTRLEntry& val){
+	    float g = grad[0];
             float sqrt_n = val.sq_cum_grad;
-            float sqrt_n_new = sqrt(sqrt_n * sqrt_n + grad * grad);
-                val.z += grad - (sqrt_n_new - sqrt_n);
+            float sqrt_n_new = sqrt(sqrt_n * sqrt_n + g * g);
+                val.z += g - (sqrt_n_new - sqrt_n);
                 val.sq_cum_grad = sqrt_n_new;
                 float z = val.z;
                 if(abs(z) <= lambda1){
