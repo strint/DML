@@ -21,7 +21,7 @@ namespace linear{
         float sq_cum_grad = 0;
         inline void Load(Stream *fi) { }//must has
         inline void Save(Stream *fo) const { }//must has
-        inline bool Empty() const { }i//must has
+        inline bool Empty() const { }//must has
     };
     struct FTRLHandle : public ISGDHandle{
     public:

@@ -1,4 +1,7 @@
+#include "worker.h"
 #include "server.h"
+#include "scheduler.h"
+
 #include "ps.h"
 
 namespace ps{
@@ -14,10 +17,11 @@ namespace ps{
     }else if(n.IsServer()){
         return new ::dmlc::linear::Server();
     }else if(n.IsScheduler){
-        return new ::dmlc::linear::Scheuler();
+        return new ::dmlc::linear::Scheduler();
     }
     return NULL;
   }
+
 }//namespace ps
 
 int64_t dmlc::linear::ISGDHandle::new_w = 0;

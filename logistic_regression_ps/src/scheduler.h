@@ -3,7 +3,7 @@
 namespace dmlc{
 namespace linear{
 
-  class Scheduler{
+  class Scheduler : public ps::App{
     public:
         Scheduler(){}
         ~Scheduler(){}
